@@ -1094,6 +1094,85 @@ kbd {
 }
 /* ─────────────────────────────────────────────────────────────────── */
 
+/* ─── Finale Podium ──────────────────────────────────────────────── */
+@keyframes ttChampionGlow {
+  0%, 100% {
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.18),
+      0 0 32px rgba(255,215,90,.55), 0 0 70px rgba(255,215,90,.26),
+      0 -18px 60px rgba(0,0,0,.62);
+    border-color: rgba(255,215,90,.72);
+  }
+  50% {
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.26),
+      0 0 62px rgba(255,215,90,.96), 0 0 120px rgba(255,215,90,.52),
+      0 -18px 60px rgba(0,0,0,.62);
+    border-color: rgba(255,236,132,1);
+  }
+}
+#tt-finale-podium {
+  position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+}
+.tt-podium-stage {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  bottom: calc(var(--app-bottom-bar-h) + 10px);
+  display: flex; align-items: flex-end; gap: 10px;
+}
+.tt-podium-slot {
+  transform: translateY(115vh);
+  transition: transform 1.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.tt-podium-slot.tt-podium-risen { transform: translateY(0); }
+.tt-podium-card {
+  border-radius: 14px; border: 1.5px solid rgba(255,255,255,.16);
+  background: rgba(20,26,76,.95);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: flex-end;
+  padding: 10px 8px 8px;
+  box-shadow: 0 -14px 52px rgba(0,0,0,.58), inset 0 1px 0 rgba(255,255,255,.09);
+  position: relative; overflow: visible;
+}
+.tt-podium-card.tt-podium-1st {
+  width: 162px; height: 226px;
+  border-color: rgba(255,215,90,.70);
+  background: rgba(20,26,66,.97);
+  animation: ttChampionGlow 2.1s ease-in-out infinite;
+  animation-delay: 1.8s;
+}
+.tt-podium-card.tt-podium-2nd { width: 144px; height: 174px; border-color: rgba(214,224,236,.46); }
+.tt-podium-card.tt-podium-3rd { width: 130px; height: 144px; border-color: rgba(212,145,92,.46); }
+.tt-podium-rank-icon { font-size: 26px; line-height: 1; margin-bottom: 5px; }
+.tt-podium-score {
+  font-size: 20px; font-weight: 900; color: var(--accent);
+  font-variant-numeric: tabular-nums; margin-bottom: 4px; line-height: 1;
+}
+.tt-podium-card.tt-podium-1st .tt-podium-score { font-size: 26px; color: #ffe58c; }
+.tt-podium-name {
+  font-size: 12px; font-weight: 700; color: #fff;
+  text-align: center; word-break: break-word; line-height: 1.25; max-width: 100%;
+}
+.tt-podium-card.tt-podium-1st .tt-podium-name { font-size: 14px; }
+.tt-podium-place {
+  font-size: 9px; font-weight: 600; opacity: .5;
+  margin-top: 4px; letter-spacing: .07em; text-transform: uppercase;
+}
+/* Participation badge overlaid on existing score cards */
+.tt-participation-badge {
+  position: absolute; inset: 0; border-radius: 14px;
+  background: rgba(12,18,52,.86);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 3px;
+  opacity: 0; transition: opacity .65s ease;
+  pointer-events: none; z-index: 10;
+}
+.tt-participation-badge.tt-badge-visible { opacity: 1; }
+.tt-participation-badge .tt-badge-icon { font-size: 20px; line-height: 1; }
+.tt-participation-badge .tt-badge-rank { font-size: 12px; font-weight: 800; color: rgba(255,255,255,.88); }
+.tt-participation-badge .tt-badge-text {
+  font-size: 9px; font-weight: 600; color: rgba(255,255,255,.52);
+  text-transform: uppercase; letter-spacing: .06em;
+}
+/* ─────────────────────────────────────────────────────────────────── */
+
 #tt-victory-lock-banner {
   position: fixed;
   left: 50%;
@@ -5315,6 +5394,164 @@ function render(){
     }
     /* ──────────────────────────────────────────────────────────────── */
 
+    /* ── Finale sequence ─────────────────────────────────────────── */
+    var finaleTriggered = false;
+    var finaleTimers = [];
+    var finaleAudio = null;
+
+    function clearFinaleTimers(){
+        finaleTimers.forEach(function(t){ try{ clearTimeout(t); } catch(e){} });
+        finaleTimers = [];
+    }
+
+    function ensureFinaleAudio(){
+        if(finaleAudio){ return finaleAudio; }
+        try {
+            var a = new Audio();
+            a.src = 'media/Audio/long victory.mp3';
+            a.preload = 'auto'; a.volume = 0.88; a.load();
+            finaleAudio = a;
+        } catch(e){ finaleAudio = null; }
+        return finaleAudio;
+    }
+
+    function runBoardFinaleSparkle(durationMs){
+        var cells = Array.prototype.slice.call(document.querySelectorAll(
+            '.grid-row-cats .grid-cell, .grid-row-questions .grid-cell'));
+        if(!cells.length){ return; }
+        var baseDelay = 88;
+        var currentDelay = 0;
+        var endTime = durationMs - 1400;
+        while(currentDelay < endTime){
+            (function(passDelay){
+                var shuffled = shuffleArray(cells.slice());
+                shuffled.forEach(function(cell, idx){
+                    var d = passDelay + idx * baseDelay;
+                    if(d >= endTime){ return; }
+                    var t1 = setTimeout(function(){
+                        cell.classList.remove('tt-board-intro-flash');
+                        void cell.offsetWidth;
+                        cell.classList.add('tt-board-intro-flash');
+                        var t2 = setTimeout(function(){ cell.classList.remove('tt-board-intro-flash'); }, 333);
+                        finaleTimers.push(t2);
+                    }, d);
+                    finaleTimers.push(t1);
+                });
+            })(currentDelay);
+            currentDelay += cells.length * baseDelay + 260;
+        }
+    }
+
+    function ordinalSuffix(n){
+        var s = ['th','st','nd','rd'], v = n % 100;
+        return s[(v - 20) % 10] || s[v] || s[0];
+    }
+
+    function buildPodiumSlot(playerData, cssClass, placeLabel, rankIcon){
+        var slot = document.createElement('div');
+        slot.className = 'tt-podium-slot';
+        var card = document.createElement('div');
+        card.className = 'tt-podium-card ' + cssClass;
+        var icon = document.createElement('div');
+        icon.className = 'tt-podium-rank-icon'; icon.textContent = rankIcon;
+        var score = document.createElement('div');
+        score.className = 'tt-podium-score'; score.textContent = playerData.score;
+        var name = document.createElement('div');
+        name.className = 'tt-podium-name'; name.textContent = playerData.name;
+        var place = document.createElement('div');
+        place.className = 'tt-podium-place'; place.textContent = placeLabel;
+        card.appendChild(icon); card.appendChild(score);
+        card.appendChild(name); card.appendChild(place);
+        slot.appendChild(card);
+        return slot;
+    }
+
+    function runFinaleSequence(){
+        if(finaleTriggered){ return; }
+        finaleTriggered = true;
+        clearFinaleTimers();
+
+        /* Sort players by score descending */
+        var ranked = state.players.map(function(p, i){
+            return { index: i, name: p.name || ('Player ' + (i + 1)), score: p.score };
+        });
+        ranked.sort(function(a, b){ return b.score - a.score; });
+        var top3   = ranked.slice(0, Math.min(3, ranked.length));
+        var others = ranked.slice(3);
+
+        /* Close modal */
+        try {
+            var qm = document.getElementById('question-modal');
+            if(qm && typeof qm.hide === 'function'){ qm.hide(); }
+        } catch(e){}
+
+        /* Victory audio */
+        var aud = ensureFinaleAudio();
+        if(aud){
+            try { aud.pause(); aud.currentTime = 0;
+                var pp = aud.play(); if(pp && pp.catch){ pp.catch(function(){}); }
+            } catch(e){}
+        }
+
+        /* Board sparkle */
+        finaleTimers.push(setTimeout(function(){ runBoardFinaleSparkle(7600); }, 280));
+
+        /* Build podium overlay — order on stage: 2nd | 1st | 3rd */
+        var old = document.getElementById('tt-finale-podium');
+        if(old){ old.parentNode.removeChild(old); }
+        var overlay = document.createElement('div');
+        overlay.id = 'tt-finale-podium';
+        var stage = document.createElement('div');
+        stage.className = 'tt-podium-stage';
+
+        var defs = [
+            { rank: 1, css: 'tt-podium-2nd', label: '2nd Place', icon: '🥈', delay: 1300 },
+            { rank: 0, css: 'tt-podium-1st', label: '1st Place', icon: '🏆', delay: 880  },
+            { rank: 2, css: 'tt-podium-3rd', label: '3rd Place', icon: '🥉', delay: 1660 }
+        ];
+        var slots = [];
+        defs.forEach(function(def){
+            if(!top3[def.rank]){ return; }
+            var sl = buildPodiumSlot(top3[def.rank], def.css, def.label, def.icon);
+            slots.push({ slot: sl, delay: def.delay });
+            stage.appendChild(sl);
+        });
+        overlay.appendChild(stage);
+        document.body.appendChild(overlay);
+
+        /* Animate rise */
+        slots.forEach(function(s){
+            finaleTimers.push(setTimeout(function(){ s.slot.classList.add('tt-podium-risen'); }, s.delay));
+        });
+
+        /* Participation badges on scoreboard cards (4th+ players) */
+        finaleTimers.push(setTimeout(function(){
+            others.forEach(function(player, i){
+                var card = document.querySelector('.score-entry[data-player-index="' + player.index + '"]');
+                if(!card){ return; }
+                card.style.position = 'relative';
+                var badge = document.createElement('div');
+                badge.className = 'tt-participation-badge';
+                var ic = document.createElement('div'); ic.className = 'tt-badge-icon'; ic.textContent = '⭐';
+                var rk = document.createElement('div'); rk.className = 'tt-badge-rank';
+                rk.textContent = (i + 4) + ordinalSuffix(i + 4) + ' Place';
+                var tx = document.createElement('div'); tx.className = 'tt-badge-text';
+                tx.textContent = 'Great game!';
+                badge.appendChild(ic); badge.appendChild(rk); badge.appendChild(tx);
+                card.appendChild(badge);
+                finaleTimers.push(setTimeout(function(){ badge.classList.add('tt-badge-visible'); }, i * 220));
+            });
+        }, 3800));
+    }
+
+    function checkAndTriggerFinale(){
+        if(finaleTriggered){ return; }
+        if(totalClues() > 0 && answeredCount() >= totalClues()){
+            finaleTimers.push(setTimeout(runFinaleSequence, 1800));
+        }
+    }
+    /* ─────────────────────────────────────────────────────────────── */
+
     function applyCorrectStreak(playerIndex){
         var currentStreakPlayer = typeof state.streakPlayerIndex === "number" ? state.streakPlayerIndex : null;
         var currentStreakCount = Number(state.streakCount) > 0 ? Number(state.streakCount) : 0;
@@ -5390,6 +5627,7 @@ function render(){
             var answerBlock = document.querySelector('#question-modal .tt-answer-content');
             ttFireCellElement(answerBlock || answeredCell);
         }
+        checkAndTriggerFinale();
     }
 
     function undoLast(){
@@ -5430,6 +5668,15 @@ function render(){
     }
 
     function resetGame(){
+    /* Clear finale state */
+    finaleTriggered = false;
+    clearFinaleTimers();
+    if(finaleAudio){ try{ finaleAudio.pause(); finaleAudio.currentTime = 0; } catch(e){} }
+    var fp = document.getElementById('tt-finale-podium');
+    if(fp){ fp.parentNode.removeChild(fp); }
+    /* Remove any participation badges */
+    document.querySelectorAll('.tt-participation-badge').forEach(function(b){ b.parentNode.removeChild(b); });
+
     var inerts = document.querySelectorAll(".grid-row-questions .inert");
     for(var i = 0; i < inerts.length; i++){
         inerts[i].classList.remove("inert");
