@@ -1234,13 +1234,17 @@ body.tt-drawing-active #tt-meter-stage * { pointer-events: auto; }
 .intro-palms { position: fixed; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
 .intro-palm {
   position: fixed; bottom: -2vh; width: auto;
-  height: min(82vh, 900px); max-width: 46vw;
+  /* clamp adds a floor so palms stay visible at small windows; 28vw coefficient
+     reduces width growth from 113% (original 46vw) to ~35% across typical PC sizes */
+  height: clamp(560px, 83vh, 920px);
+  max-width: clamp(260px, 28vw, 480px);
   object-fit: contain; object-position: bottom center; opacity: 0;
   filter: drop-shadow(0 18px 26px rgba(0,0,0,.42));
   transition: transform 1.8s cubic-bezier(.16,.84,.24,1), opacity 1.8s ease-out;
 }
-.intro-palm.left  { left: -4vw; transform: translateX(-18vw); }
-.intro-palm.right { right: -4vw; transform: translateX(18vw); }
+/* Fixed pixel offset keeps palms anchored regardless of viewport width */
+.intro-palm.left  { left: -20px; transform: translateX(-18vw); }
+.intro-palm.right { right: -20px; transform: translateX(18vw); }
 #intro-overlay.logo-visible .intro-palm { opacity: .78; }
 #intro-overlay.logo-visible .intro-palm.left, #intro-overlay.logo-visible .intro-palm.right { transform: translateX(0); }
 
@@ -1252,7 +1256,7 @@ body.tt-drawing-active #tt-meter-stage * { pointer-events: auto; }
 }
 .vice-title {
   position: fixed; left: 42px; bottom: 64px; top: auto; z-index: 14001;
-  display: flex; flex-direction: column; align-items: flex-start; width: min(44vw, 770px);
+  display: flex; flex-direction: column; align-items: flex-start; width: min(40vw, 660px);
   pointer-events: none; user-select: none;
   transform: translateY(14px) rotate(-2deg); transform-origin: bottom left;
   filter: drop-shadow(0 16px 28px rgba(0,0,0,.56)) drop-shadow(0 0 4px rgba(255,255,255,.45)) drop-shadow(0 0 10px rgba(255,109,198,.22));
@@ -1265,7 +1269,7 @@ body.tt-drawing-active #tt-meter-stage * { pointer-events: auto; }
 }
 .vice-title-top {
   margin-left: 4px; font-family: Impact, Haettenschweiler, "Arial Black", sans-serif;
-  font-size: clamp(68px, 6vw, 108px); font-weight: 900; letter-spacing: -.02em;
+  font-size: clamp(76px, 5vw, 98px); font-weight: 900; letter-spacing: -.02em;
   text-transform: lowercase; line-height: .78; color: #fff;
   -webkit-text-stroke: 4px #06070c; paint-order: stroke fill;
   transform: scaleY(1.03) skewX(-6deg);
@@ -1274,7 +1278,7 @@ body.tt-drawing-active #tt-meter-stage * { pointer-events: auto; }
 .vice-title-bottom {
   position: relative; margin-top: -14px; margin-left: 10px; display: inline-block;
   font-family: "ViceCityScript", "Brush Script MT", "Segoe Script", "Lucida Handwriting", cursive;
-  font-size: clamp(104px, 8.2vw, 152px); font-weight: 400; line-height: .82; letter-spacing: -.01em;
+  font-size: clamp(110px, 7vw, 144px); font-weight: 400; line-height: .82; letter-spacing: -.01em;
   color: #ff69c6; -webkit-text-stroke: 2.4px #130814; paint-order: stroke fill;
   transform: rotate(-4.5deg);
   text-shadow: 0 0 2px rgba(255,255,255,.98), 0 0 6px rgba(255,109,198,.26), 3px 3px 0 rgba(86,233,255,.88), 0 0 16px rgba(255,109,198,.14);
