@@ -930,24 +930,31 @@ kbd {
   border-width: 2px; border-style: solid;
   background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.045));
 }
-.score-entry.rank-gold   { border-color: rgba(255,215,90,.94); box-shadow: inset 0 1px 0 rgba(255,255,255,.16), 0 0 18px rgba(255,215,90,.12); }
+.score-entry.rank-gold   { border-color: rgba(255,215,90,.94); box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 0 26px rgba(255,215,90,.32), 0 0 52px rgba(255,215,90,.11); }
 .score-entry.rank-silver { border-color: rgba(214,224,236,.94); box-shadow: inset 0 1px 0 rgba(255,255,255,.16), 0 0 14px rgba(214,224,236,.11); }
 .score-entry.rank-bronze { border-color: rgba(212,145,92,.94); box-shadow: inset 0 1px 0 rgba(255,255,255,.15), 0 0 12px rgba(212,145,92,.10); }
 .score-entry.rank-gold .score-value, .score-entry.rank-gold .score-name   { color: #ffe58c; }
 .score-entry.rank-silver .score-value, .score-entry.rank-silver .score-name { color: #e7edf6; }
 .score-entry.rank-bronze .score-value, .score-entry.rank-bronze .score-name { color: #e7b089; }
-.score-entry.rank-gold.rank-animated   { animation: goldBreathGlow 4.8s ease-in-out infinite; will-change: box-shadow, border-color, transform; }
+.score-entry.rank-gold.rank-animated                  { animation: goldBreathGlow 4.8s ease-in-out infinite; will-change: box-shadow, border-color, transform; }
+.score-entry.rank-gold.rank-animated.victory-locked   { animation: goldVictoryGlow 3.6s ease-in-out infinite; }
 .score-entry.rank-silver.rank-animated { animation: silverBreathGlow 7.2s ease-in-out infinite; will-change: box-shadow, border-color; }
 .score-entry.rank-bronze.rank-animated { animation: bronzeBreathGlow 8.8s ease-in-out infinite; will-change: box-shadow, border-color; }
 .score-entry.rank-gold.rank-animated .score-name,
-.score-entry.rank-gold.rank-animated .score-value { text-shadow: 0 0 8px rgba(255,229,140,.14); }
+.score-entry.rank-gold.rank-animated .score-value { text-shadow: 0 0 8px rgba(255,229,140,.22); }
+.score-entry.rank-gold.rank-animated.victory-locked .score-name,
+.score-entry.rank-gold.rank-animated.victory-locked .score-value { text-shadow: 0 0 12px rgba(255,239,170,.58), 0 0 24px rgba(255,232,126,.24); }
 .score-entry.rank-silver.rank-animated .score-name,
 .score-entry.rank-silver.rank-animated .score-value { text-shadow: 0 0 8px rgba(231,237,246,.12); }
 .score-entry.rank-bronze.rank-animated .score-name,
 .score-entry.rank-bronze.rank-animated .score-value { text-shadow: 0 0 8px rgba(231,176,137,.10); }
 @keyframes goldBreathGlow {
-  0%,100% { border-color: rgba(255,215,90,.90); box-shadow: inset 0 1px 0 rgba(255,255,255,.15), 0 0 18px rgba(255,215,90,.12); transform: translateY(0); }
-  50%     { border-color: rgba(255,223,120,.99); box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 0 22px rgba(255,215,90,.24); transform: translateY(-1px); }
+  0%,100% { border-color: rgba(255,215,90,.92); box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 0 26px rgba(255,215,90,.32), 0 0 52px rgba(255,215,90,.11); transform: translateY(0); }
+  50%     { border-color: rgba(255,228,110,.99); box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 0 38px rgba(255,215,90,.54), 0 0 68px rgba(255,215,90,.20); transform: translateY(-2px); }
+}
+@keyframes goldVictoryGlow {
+  0%,100% { border-color: rgba(255,232,126,.98); box-shadow: inset 0 1px 0 rgba(255,255,255,.24), 0 0 52px rgba(255,232,126,.60), 0 0 104px rgba(255,232,126,.22), 0 0 140px rgba(255,232,126,.08); transform: translateY(-2px); }
+  50%     { border-color: rgba(255,242,150,1);   box-shadow: inset 0 1px 0 rgba(255,255,255,.30), 0 0 76px rgba(255,232,126,.80), 0 0 140px rgba(255,232,126,.38), 0 0 180px rgba(255,232,126,.14); transform: translateY(-4px); }
 }
 @keyframes silverBreathGlow {
   0%,100% { border-color: rgba(214,224,236,.94); box-shadow: inset 0 1px 0 rgba(255,255,255,.16), 0 0 14px rgba(214,224,236,.11); }
