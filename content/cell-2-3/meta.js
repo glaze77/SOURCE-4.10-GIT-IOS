@@ -1,0 +1,1 @@
+window.transferTriviaRegisterMeta("cell-2-3", {"clueId":"cell-2-3","slide":13,"category":"Kohler M340","points":"200","badges":[],"mediaClass":"","media":[{"file":"image1.png","w":1539081,"h":3103187}]});

@@ -1,0 +1,1 @@
+window.transferTriviaRegisterMeta("cell-4-2", {"clueId":"cell-4-2","slide":22,"category":"ASCO Switches","points":"400","badges":[],"mediaClass":"","media":[{"file":"image1.png","w":2199433,"h":4000345}]});

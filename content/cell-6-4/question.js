@@ -1,0 +1,1 @@
+window.transferTriviaRegisterQuestion('cell-6-4', "While attempting a transfer to emergency, the transfer does not occur. Troubleshooting, you measure from ea to Bridge-A and read 0VAC. Measuring EC to Bridge-b and read 0VAC. Measuring across Bridge-A to bridge-B and you read 208vac. Checking the output you read 198vdc. What could be the issue?\n");

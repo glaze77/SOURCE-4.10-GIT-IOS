@@ -1,0 +1,1 @@
+Which prompt would you receive on the LCD Display if the attempted entry is outside of allowable numeric range?

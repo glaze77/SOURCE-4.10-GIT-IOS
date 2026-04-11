@@ -1,0 +1,1 @@
+window.transferTriviaRegisterAnswer("cell-5-0", "Transformer T2 is open. With no output on the secondary for the processor, the processor will not receive pickup voltage and frequency needed to energize ER and transfer to Emergency.\n");

@@ -1,0 +1,1 @@
+You’ve lost commercial power. The engine started and stabilized, a transfer to emergency never occurred. Looking at index #2, you see that “Emer voltage” displays “0 vAC.” At the transfer switch You measure EA-phase to EC-phase and read 208vac. What could be the issue?

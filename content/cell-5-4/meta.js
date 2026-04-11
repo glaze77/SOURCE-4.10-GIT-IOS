@@ -1,0 +1,1 @@
+window.transferTriviaRegisterMeta("cell-5-4", {"clueId":"cell-5-4","slide":29,"category":"Schematics","points":"500","badges":[],"mediaClass":"","media":[{"file":"image1.png","w":9608382,"h":773310}]});

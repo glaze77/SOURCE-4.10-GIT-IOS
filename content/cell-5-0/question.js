@@ -1,0 +1,1 @@
+window.transferTriviaRegisterQuestion('cell-5-0', "You\u2019ve lost commercial power. The engine started and stabilized, a transfer to emergency never occurred. Looking at index #2, you see that \u201cEmer voltage\u201d displays \u201c0 vAC.\u201d At the transfer switch You measure EA-phase to EC-phase and read 208vac. What could be the issue?\n");

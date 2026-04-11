@@ -1,0 +1,1 @@
+window.transferTriviaRegisterMeta("cell-2-1", {"clueId":"cell-2-1","slide":11,"category":"Bypass/Isolation","points":"200","badges":[],"mediaClass":"","media":[{"file":"image1.png","w":2677512,"h":4232633}]});

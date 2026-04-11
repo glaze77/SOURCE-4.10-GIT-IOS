@@ -1,0 +1,1 @@
+window.transferTriviaRegisterAnswer("cell-6-3", "ASCO 962 = J1<W11> P1 ASCO 434 = J6 <W11> P6\n");
