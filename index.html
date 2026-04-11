@@ -12,14 +12,16 @@
 <script>
 /* iOS scroll-lock: prevent the document/body from scrolling.
    touchmove is only allowed when the touch target is inside
-   an element that is actually scrollable (overflow auto/scroll). */
+   an element that is actually scrollable (overflow auto/scroll),
+   but never inside the intro overlay or game fixed containers. */
 (function(){
     function isScrollable(el){
         if(!el || el === document.body || el === document.documentElement){ return false; }
+        // Never allow scroll propagation through the intro overlay
+        if(el.id === 'intro-overlay' || el.classList.contains('intro-card') || el.classList.contains('intro-stage')){ return false; }
         var style = window.getComputedStyle(el);
         var overflow = style.overflow + style.overflowY + style.overflowX;
         if(/auto|scroll/.test(overflow)){
-            // Only counts if it actually overflows
             if(el.scrollHeight > el.clientHeight || el.scrollWidth > el.clientWidth){
                 return true;
             }
@@ -2629,12 +2631,11 @@ body::before {
     opacity: 0;
     transform: translateY(18px) scale(.988);
     transition: opacity 1.35s cubic-bezier(.2,.8,.22,1), transform 1.35s cubic-bezier(.2,.8,.22,1);
-    /* iOS scroll containment: card scrolls internally, never the page */
-    max-height: calc(100vh - 48px);
+    /* No internal scroll — content must fit, touch gestures die here */
+    overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: none;
     max-height: calc(100dvh - 48px);
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
 }
 #intro-overlay.card-visible .intro-card {
     opacity: 1;
@@ -2700,6 +2701,25 @@ body::before {
     opacity: 0;
     transform: translateY(12px);
     transition: opacity .9s cubic-bezier(.2,.8,.22,1), transform .9s cubic-bezier(.2,.8,.22,1);
+}
+
+/* ── Mobile: shrink intro card to fit iPhone without any scroll ── */
+@media (max-height: 750px) {
+    .intro-card {
+        padding: 16px 18px 14px;
+        border-radius: 18px;
+    }
+    .intro-eyebrow { font-size: 10px; margin-bottom: 6px; }
+    .intro-card h1  { font-size: 26px; margin-bottom: 6px; }
+    .intro-copy     { font-size: 14px; line-height: 1.4; margin-bottom: 8px; }
+    .intro-copy li  { margin-bottom: 6px; }
+    /* Hide the images — rules still read fine on phone without them */
+    .intro-copy-media { display: none; }
+    .intro-actions  { margin-top: 14px; gap: 10px; }
+}
+@media (max-height: 600px) {
+    .intro-card h1  { font-size: 20px; }
+    .intro-copy     { font-size: 12px; }
 }
 #intro-overlay.start-ready .intro-actions {
     opacity: 1;
