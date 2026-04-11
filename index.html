@@ -5,12 +5,18 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" name="viewport"/>
-<title>Transfer Trivia1</title>
+<title>Transfer Trivia</title>
 
 <style type="text/css">
             :root {
     --vvh: 100vh;
     --app-bottom-bar-h-live: var(--app-bottom-bar-h, 0px);
+    --stage-width: 100vw;
+    --stage-height: 100vh;
+    --stage-left: 0px;
+    --stage-top: 0px;
+    --stage-right-gap: 0px;
+    --stage-bottom-gap: 0px;
 }
 
 html, body {
@@ -2018,22 +2024,28 @@ body::before {
 }
 
 #gameplay {
+    position: fixed;
+    left: var(--stage-left);
+    top: var(--stage-top);
+    width: var(--stage-width);
+    height: var(--stage-height);
     filter:none !important;
     padding-bottom: var(--app-bottom-bar-h-live);
     overflow: visible;
 }
 
 .grid {
-    height: calc(var(--vvh) - var(--app-bottom-bar-h-live)) !important;
-    min-height: 320px;
+    height: calc(var(--stage-height) - var(--app-bottom-bar-h-live)) !important;
+    min-height: 180px;
     overflow: visible;
 }
 
 #scoreboard-panel {
     position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    left: var(--stage-left);
+    right: auto;
+    bottom: var(--stage-bottom-gap);
+    width: var(--stage-width);
     z-index: 9997;
     background: linear-gradient(180deg, rgba(12,21,83,.98), rgba(7,14,57,.98));
     border-top: 1px solid rgba(255,255,255,.16);
@@ -4905,7 +4917,32 @@ var waves = [shuffleArray(even.slice()), shuffleArray(odd.slice())];        var 
     function syncViewportVars(){
         var root = document.documentElement;
         if(!root){ return; }
-        root.style.setProperty("--vvh", getViewportHeight() + "px");
+        var viewportH = getViewportHeight();
+        var viewportW = window.innerWidth || document.documentElement.clientWidth || 0;
+        var stageW = viewportW;
+        var stageH = viewportH;
+        if(viewportW > 0 && viewportH > 0){
+            if((viewportW / viewportH) > (16 / 9)){
+                stageH = viewportH;
+                stageW = Math.round(stageH * (16 / 9));
+            } else {
+                stageW = viewportW;
+                stageH = Math.round(stageW * (9 / 16));
+            }
+        }
+        stageW = Math.max(1, stageW);
+        stageH = Math.max(1, stageH);
+        var stageLeft = Math.max(0, Math.round((viewportW - stageW) / 2));
+        var stageTop = Math.max(0, Math.round((viewportH - stageH) / 2));
+        var stageRightGap = Math.max(0, viewportW - stageLeft - stageW);
+        var stageBottomGap = Math.max(0, viewportH - stageTop - stageH);
+        root.style.setProperty("--vvh", viewportH + "px");
+        root.style.setProperty("--stage-width", stageW + "px");
+        root.style.setProperty("--stage-height", stageH + "px");
+        root.style.setProperty("--stage-left", stageLeft + "px");
+        root.style.setProperty("--stage-top", stageTop + "px");
+        root.style.setProperty("--stage-right-gap", stageRightGap + "px");
+        root.style.setProperty("--stage-bottom-gap", stageBottomGap + "px");
         var bottomPanel = document.getElementById("scoreboard-panel");
         var panelH = bottomPanel ? Math.ceil(bottomPanel.getBoundingClientRect().height) : 0;
         root.style.setProperty("--app-bottom-bar-h-live", panelH + "px");
@@ -4914,18 +4951,21 @@ var waves = [shuffleArray(even.slice()), shuffleArray(odd.slice())];        var 
     if(typeof window.getQuestionModalBottomLimit !== "function"){
         window.getQuestionModalBottomLimit = function getQuestionModalBottomLimit() {
             var bottomPanel = document.getElementById("scoreboard-panel");
-            var viewportH = getViewportHeight();
-            if(!bottomPanel){ return Math.max(420, viewportH - 170); }
-            return Math.min(viewportH - 4, bottomPanel.getBoundingClientRect().top);
+            var stageTop = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--stage-top")) || 0;
+            var stageH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--stage-height")) || getViewportHeight();
+            var stageBottom = stageTop + stageH;
+            if(!bottomPanel){ return Math.max(stageTop + 220, stageBottom - 170); }
+            return Math.min(stageBottom - 4, bottomPanel.getBoundingClientRect().top);
         };
     }
 
     function refreshLayout(){
         var bottomPanel = document.getElementById("scoreboard-panel");
-        var panelH = bottomPanel ? bottomPanel.getBoundingClientRect().height : 0;
         syncViewportVars();
+        var panelH = bottomPanel ? bottomPanel.getBoundingClientRect().height : 0;
         if(window.grid){
-            var usable = Math.max(320, getViewportHeight() - panelH - 10);
+            var stageH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--stage-height")) || getViewportHeight();
+            var usable = Math.max(180, stageH - panelH - 10);
             window.grid.style.height = usable + "px";
             minirender(window.grid, function(g){ g.style.opacity = 1; }, 0.7);
         }
@@ -5483,7 +5523,7 @@ to { transform: rotate(360deg); }
 </head>
 <body>
 <div id="gameplay">
-<div aria-label="Game Board" class="grid grid-play" role="table" style="height:100vh; ">
+<div aria-label="Game Board" class="grid grid-play" role="table" style="height:calc(var(--stage-height) - var(--app-bottom-bar-h-live)); ">
 <div class="grid-row grid-row-cats" role="row" style="">
 <div class="grid-cell" data-col="0" data-row="0">
 <div class="cell">
@@ -6657,6 +6697,32 @@ to { transform: rotate(360deg); }
 
 #gameplay > .grid::after {
   bottom: 10px;
+}
+
+#intro-overlay,
+#question-modal,
+#tt-clue-splash-overlay,
+.tt-global-sound-layer,
+.tt-global-player-layer,
+.tt-lightbox,
+.tt-wrong-overlay {
+  left: var(--stage-left) !important;
+  top: var(--stage-top) !important;
+  right: auto !important;
+  bottom: auto !important;
+  width: var(--stage-width) !important;
+  height: var(--stage-height) !important;
+}
+
+#intro-overlay::before,
+#question-modal::before,
+#tt-clue-splash-overlay::before {
+  inset: 0;
+}
+
+body::before {
+  top: calc(var(--stage-top) + 18px);
+  left: calc(var(--stage-left) + 18px);
 }
 
 @media (orientation: portrait) {
@@ -8157,8 +8223,8 @@ window.transferTriviaDeck = {};
 }
 #draw-tools-hub {
     position: fixed;
-    top: max(14px, env(safe-area-inset-top, 0px));
-    right: max(14px, env(safe-area-inset-right, 0px));
+    top: calc(var(--stage-top) + max(14px, env(safe-area-inset-top, 0px)));
+    right: calc(var(--stage-right-gap) + max(14px, env(safe-area-inset-right, 0px)));
     width: 74px;
     z-index: 13060;
     display: flex;
@@ -8350,12 +8416,12 @@ window.transferTriviaDeck = {};
 #tt-draw-layer,
 #tt-meter-stage {
   position: fixed;
-  left: 0;
-  right: 0;
-  top: var(--tt-draw-top);
-  bottom: var(--app-bottom-bar-h-live);
-  width: 100%;
-  height: calc(var(--vvh) - var(--tt-draw-top) - var(--app-bottom-bar-h-live));
+  left: var(--stage-left);
+  right: auto;
+  top: calc(var(--stage-top) + var(--tt-draw-top));
+  bottom: auto;
+  width: var(--stage-width);
+  height: calc(var(--stage-height) - var(--tt-draw-top) - var(--app-bottom-bar-h-live));
   display: none;
   touch-action: none;
 }
@@ -8476,7 +8542,7 @@ body.tt-drawing-active #tt-meter-stage * {
   bottom: 10px;
 }
 @media (max-width: 900px) {
-  #draw-tools-hub { right: max(12px, env(safe-area-inset-right, 0px)); top: max(12px, env(safe-area-inset-top, 0px)); width: 62px; }
+  #draw-tools-hub { right: calc(var(--stage-right-gap) + max(12px, env(safe-area-inset-right, 0px))); top: calc(var(--stage-top) + max(12px, env(safe-area-inset-top, 0px))); width: 62px; }
   .draw-rail-btn,
   #draw-tools-trigger { width: 62px; height: 62px; border-radius: 18px; }
   #draw-tools-hub .draw-tools-menu { right: calc(100% + 12px); grid-template-columns: repeat(2, 62px); grid-auto-rows: 62px; }
