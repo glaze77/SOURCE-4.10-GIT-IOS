@@ -899,6 +899,21 @@ kbd {
   box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 2px 5px rgba(0,0,0,.22);
   border: 1px solid rgba(255,255,255,.22);
 }
+.rank-marker.is-crown {
+  width: 42px;
+  height: 34px;
+  display: block;
+  background-image: url("media/Images/crown.png");
+  background-position: center bottom;
+  background-repeat: no-repeat;
+  background-size: contain;
+  opacity: 0.93;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,.40)) drop-shadow(0 0 8px rgba(255,215,90,.22));
+}
+.rank-marker.is-gold {
+  color: #3a2200;
+  background: radial-gradient(circle at 30% 28%, rgba(255,248,180,.85), rgba(255,255,255,0) 36%), linear-gradient(180deg, #ffe77a 0%, #d4a017 52%, #9a6c00 100%);
+}
 .rank-marker.is-silver {
   color: #152033;
   background: radial-gradient(circle at 30% 28%, rgba(255,255,255,.95), rgba(255,255,255,0) 36%), linear-gradient(180deg, #eef3f9 0%, #bcc8d6 52%, #8a96a8 100%);
@@ -941,6 +956,48 @@ kbd {
 @keyframes bronzeBreathGlow {
   0%,100% { border-color: rgba(212,145,92,.94); box-shadow: inset 0 1px 0 rgba(255,255,255,.15), 0 0 12px rgba(212,145,92,.10); }
   50%     { border-color: rgba(226,166,118,.98); box-shadow: inset 0 1px 0 rgba(255,255,255,.17), 0 0 16px rgba(212,145,92,.18); }
+}
+.score-entry.victory-locked {
+  border-color: rgba(255,232,126,.98) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 0 24px rgba(255,232,126,.38), 0 0 50px rgba(255,232,126,.14);
+}
+.score-entry.victory-locked .score-name,
+.score-entry.victory-locked .score-value {
+  text-shadow: 0 0 10px rgba(255,239,170,.42);
+}
+.score-entry.victory-lock-flash {
+  animation: ttVictoryLockFlash 1.25s ease-out both;
+}
+@keyframes ttVictoryLockFlash {
+  0% { transform: translateY(0) scale(1); box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 0 20px rgba(255,232,126,.22); }
+  20% { transform: translateY(-2px) scale(1.03); box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 0 28px rgba(255,232,126,.52), 0 0 70px rgba(255,232,126,.22); }
+  100% { transform: translateY(0) scale(1); box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 0 24px rgba(255,232,126,.38), 0 0 50px rgba(255,232,126,.14); }
+}
+#tt-victory-lock-banner {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--app-bottom-bar-h) + 20px);
+  transform: translateX(-50%) translateY(14px) scale(.98);
+  z-index: 10020;
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,232,126,.62);
+  background: linear-gradient(180deg, rgba(34,50,145,.95), rgba(13,24,92,.95));
+  color: #fff1b3;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  box-shadow: 0 14px 34px rgba(0,0,0,.34), 0 0 24px rgba(255,232,126,.22);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity .3s ease, transform .3s ease, visibility .3s ease;
+}
+#tt-victory-lock-banner.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0) scale(1);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -2594,7 +2651,9 @@ if (CLEAN_MODE) {
                     on_cell = matches(document.activeElement, ".grid-row-questions .grid-cell");
                     on_input = matches(document.activeElement, "*[role='textbox']");
                 }
-                var clickable = on_cell && !document.activeElement.classList.contains('empty');
+                var clickable = on_cell
+                    && !document.activeElement.classList.contains('empty')
+                    && !document.activeElement.classList.contains('inert');
 
                 if(e.altKey && e.keyCode == 65){
                     do_autoplay = !do_autoplay;
@@ -2741,6 +2800,10 @@ if (CLEAN_MODE) {
             })
 
             on("click", ".grid-row-questions .grid-cell", function(e){
+                if(this.classList.contains("inert") || this.classList.contains("empty")){
+                    e.preventDefault();
+                    return;
+                }
                 current_cell = this;
                 if(typeof window.openClueWithBadgeSplash === "function"){
                     window.openClueWithBadgeSplash(this);
@@ -3077,6 +3140,9 @@ if (CLEAN_MODE) {
     }
 
     modal.show = function(cell, no_push_state){
+        if(!cell || cell.classList.contains("inert") || cell.classList.contains("empty")){
+            return;
+        }
         removeClass(".active-question", "active-question");
         cell.classList.add("active-question");
 
@@ -3222,7 +3288,9 @@ if (CLEAN_MODE) {
                         lastUpdated: typeof parsed.lastUpdated === "number" ? parsed.lastUpdated : null,
                         introSeen: !!parsed.introSeen,
                         soundEnabled: parsed.soundEnabled !== false,
-                        rankAnimatedByTier: parsed.rankAnimatedByTier && typeof parsed.rankAnimatedByTier === "object" ? parsed.rankAnimatedByTier : {}
+                        rankAnimatedByTier: parsed.rankAnimatedByTier && typeof parsed.rankAnimatedByTier === "object" ? parsed.rankAnimatedByTier : {},
+                        lockedWinnerIndex: typeof parsed.lockedWinnerIndex === "number" ? parsed.lockedWinnerIndex : null,
+                        lockCelebrated: !!parsed.lockCelebrated
                     };
                 }
             }
@@ -3232,7 +3300,9 @@ if (CLEAN_MODE) {
             lastUpdated: null,
             introSeen: false,
             soundEnabled: true,
-            rankAnimatedByTier: {}
+            rankAnimatedByTier: {},
+            lockedWinnerIndex: null,
+            lockCelebrated: false
         };
     }
 
@@ -3302,19 +3372,121 @@ if (CLEAN_MODE) {
     function updateProgress(){
     }
 
-    
-    function computeScoreRankMeta(){
-        var rankedPlayers = state.players
+    var victoryLockBannerTimer = null;
+    var victoryLockFlashTimer = null;
+    var VICTORY_LOCK_BANNER_MS = 2600;
+    var VICTORY_LOCK_FLASH_MS  = 1300;
+
+    function getRemainingBoardPoints(){
+        var total = 0;
+        document.querySelectorAll(".grid-row-questions .grid-cell").forEach(function(cell){
+            if(cell.classList.contains("inert") || cell.classList.contains("empty")){ return; }
+            var inner = cell.querySelector(".cell-inner");
+            if(!inner){ return; }
+            var points = parseInt((inner.textContent || "").replace(/[^0-9]/g, ""), 10);
+            if(!isNaN(points) && points > 0){
+                total += points;
+            }
+        });
+        return total;
+    }
+
+    function getRankedPlayers(){
+        return state.players
             .map(function(player, index){
                 return { index: index, score: Number(player.score) || 0 };
-            })
-            .filter(function(entry){
-                return entry.score > 0;
             })
             .sort(function(a, b){
                 if(b.score !== a.score){ return b.score - a.score; }
                 return a.index - b.index;
             });
+    }
+
+    function computeLockedWinnerIndex(){
+        var rankedPlayers = getRankedPlayers();
+
+        if(rankedPlayers.length < 2){ return null; }
+        var leader = rankedPlayers[0];
+        var runnerUp = rankedPlayers[1];
+        if(!leader || !runnerUp || leader.score <= runnerUp.score){ return null; }
+
+        var remainingPoints = getRemainingBoardPoints();
+        var runnerUpCeiling = runnerUp.score + remainingPoints;
+        if(leader.score > runnerUpCeiling){
+            return leader.index;
+        }
+        return null;
+    }
+
+    function ensureVictoryLockBanner(){
+        var banner = document.getElementById("tt-victory-lock-banner");
+        if(banner){ return banner; }
+        banner = document.createElement("div");
+        banner.id = "tt-victory-lock-banner";
+        banner.setAttribute("aria-live", "polite");
+        document.body.appendChild(banner);
+        return banner;
+    }
+
+    function hideVictoryLockBanner(){
+        var banner = document.getElementById("tt-victory-lock-banner");
+        if(banner){ banner.classList.remove("visible"); }
+        if(victoryLockBannerTimer){ clearTimeout(victoryLockBannerTimer); victoryLockBannerTimer = null; }
+        if(victoryLockFlashTimer){ clearTimeout(victoryLockFlashTimer); victoryLockFlashTimer = null; }
+    }
+
+    function showVictoryLockEffect(winnerIndex){
+        if(typeof winnerIndex !== "number"){ return; }
+        var winnerName = (state.players[winnerIndex] && state.players[winnerIndex].name) || ("Player " + (winnerIndex + 1));
+        var banner = ensureVictoryLockBanner();
+        banner.textContent = winnerName + " has locked the win";
+        banner.classList.add("visible");
+        if(victoryLockBannerTimer){
+            clearTimeout(victoryLockBannerTimer);
+        }
+        victoryLockBannerTimer = setTimeout(function(){
+            banner.classList.remove("visible");
+            victoryLockBannerTimer = null;
+        }, VICTORY_LOCK_BANNER_MS);
+
+        var winnerCard = document.querySelector('.score-entry[data-player-index="' + winnerIndex + '"]');
+        if(winnerCard){
+            winnerCard.classList.remove("victory-lock-flash");
+            void winnerCard.offsetWidth;
+            winnerCard.classList.add("victory-lock-flash");
+            if(victoryLockFlashTimer){ clearTimeout(victoryLockFlashTimer); }
+            victoryLockFlashTimer = setTimeout(function(){
+                winnerCard.classList.remove("victory-lock-flash");
+                victoryLockFlashTimer = null;
+            }, VICTORY_LOCK_FLASH_MS);
+        }
+
+        if(typeof playCorrectSound === "function"){
+            playCorrectSound();
+        }
+    }
+
+    function updateVictoryLockStatus(){
+        var nextLockedWinnerIndex = computeLockedWinnerIndex();
+        var prevLockedWinnerIndex = state.lockedWinnerIndex;
+        var changed = false;
+
+        if(nextLockedWinnerIndex !== prevLockedWinnerIndex){
+            state.lockedWinnerIndex = nextLockedWinnerIndex;
+            state.lockCelebrated = false;
+            changed = true;
+        }
+
+        if(nextLockedWinnerIndex === null){
+            hideVictoryLockBanner();
+        }
+
+        return changed;
+    }
+
+    
+    function computeScoreRankMeta(){
+        var rankedPlayers = getRankedPlayers().filter(function(entry){ return entry.score > 0; });
 
         /* Dense ranking visuals:
            - highest distinct score = gold
@@ -3388,6 +3560,8 @@ function render(){
         var currentCluePoints = getCurrentCluePoints();
         var scoreRankMeta = computeScoreRankMeta();
         var scoreLockActive = hasPendingScoreLock();
+        var stateDirty = updateVictoryLockStatus();
+        var lockedWinnerIndex = state.lockedWinnerIndex;
         grid.innerHTML = "";
         state.players.forEach(function(player, index){
             var card = document.createElement("div");
@@ -3396,14 +3570,21 @@ function render(){
                 + (state.lastUpdated === index ? " last-updated" : "")
                 + (scoringReady ? " controls-visible" : " controls-hidden")
                 + (rankMeta ? " rank-" + rankMeta.tier : "")
-                + (rankMeta && rankMeta.animated ? " rank-animated" : "");
+                + (rankMeta && rankMeta.animated ? " rank-animated" : "")
+                + (lockedWinnerIndex === index ? " victory-locked" : "");
+            card.setAttribute("data-player-index", String(index));
 
 
             var marker = document.createElement("div");
             marker.className = "rank-marker";
             if(rankMeta && rankMeta.animated){
                 if(rankMeta.tier === "gold"){
-                    marker.className += " is-crown";
+                    if(lockedWinnerIndex === index){
+                        marker.className += " is-crown";
+                    } else {
+                        marker.className += " is-medal is-gold";
+                        marker.textContent = "1";
+                    }
                     marker.setAttribute("aria-hidden", "true");
                 } else if(rankMeta.tier === "silver"){
                     marker.className += " is-medal is-silver";
@@ -3460,6 +3641,15 @@ function render(){
             card.appendChild(name);
             grid.appendChild(card);
         });
+
+        if(lockedWinnerIndex !== null && !state.lockCelebrated){
+            state.lockCelebrated = true;
+            stateDirty = true;
+            showVictoryLockEffect(lockedWinnerIndex);
+        }
+        if(stateDirty){
+            saveState();
+        }
 
         refreshScoreControlState();
         updateProgress();
@@ -4371,7 +4561,7 @@ function render(){
     }
 
     function openClueWithBadgeSplash(cell){
-        if(!cell){
+        if(!cell || cell.classList.contains('inert') || cell.classList.contains('empty')){
             return;
         }
         var entry = getClueEntry(cell);
@@ -4482,11 +4672,24 @@ function render(){
             }
         });
 
+        var audio = ensureBoardRevealAudio();
+        if(audio){
+            try {
+                audio.pause();
+                audio.currentTime = 0;
+                var playPromise = audio.play();
+                if(playPromise && typeof playPromise.catch === 'function'){
+                    playPromise.catch(function(){});
+                }
+            } catch (e) {}
+        }
+
 var waves = [shuffleArray(even.slice()), shuffleArray(odd.slice())];        var baseDelay = 170;
         var waveGap = 133;
+        var animOffset = 500;
         waves.forEach(function(group, waveIndex){
             group.forEach(function(cell, cellIndex){
-                var startDelay = waveIndex * waveGap + cellIndex * baseDelay;
+                var startDelay = animOffset + waveIndex * waveGap + cellIndex * baseDelay;
                 boardRevealTimers.push(setTimeout(function(){
                     cell.classList.remove('tt-board-intro-flash');
                     void cell.offsetWidth;
@@ -4497,20 +4700,6 @@ var waves = [shuffleArray(even.slice()), shuffleArray(odd.slice())];        var 
                 }, startDelay));
             });
         });
-
-        boardRevealTimers.push(setTimeout(function(){
-            var audio = ensureBoardRevealAudio();
-            if(audio){
-                try {
-                    audio.pause();
-                    audio.currentTime = 0;
-                    var playPromise = audio.play();
-                    if(playPromise && typeof playPromise.catch === 'function'){
-                        playPromise.catch(function(){});
-                    }
-                } catch (e) {}
-            }
-        }, 500));
     }
 
     function showWrongOverlay(){
@@ -4579,7 +4768,10 @@ var waves = [shuffleArray(even.slice()), shuffleArray(odd.slice())];        var 
             if(!player.name){ player.name = defaultNames[i]; }
         });
         state.lastUpdated = null;
+        state.lockedWinnerIndex = null;
+        state.lockCelebrated = false;
         lastAction = null;
+        hideVictoryLockBanner();
         saveState();
         render();
     }
@@ -4618,9 +4810,12 @@ var waves = [shuffleArray(even.slice()), shuffleArray(odd.slice())];        var 
         lastUpdated: null,
         introSeen: false,
         soundEnabled: soundEnabled !== false,
-        rankAnimatedByTier: {}
+        rankAnimatedByTier: {},
+        lockedWinnerIndex: null,
+        lockCelebrated: false
     };
     lastAction = null;
+    hideVictoryLockBanner();
 
     try { clearState(); } catch (e) {}
     saveState();
