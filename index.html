@@ -11,7 +11,7 @@
 <title>Transfer Trivia</title>
 
 <style type="text/css">
-html {
+            html {
     overflow: hidden;
     height: 100%;
 }
@@ -19,15 +19,11 @@ html {
 body {
 	background-color:#2a3698;
 	height: 100%;
-    min-height: 100vh;
-    min-height: 100svh;
-    min-height: 100dvh;
-    position: relative;
+    position: fixed;
     width: 100%;
 	font-family:Verdana, Arial, Helvetica, sans-serif;
     overflow: hidden;
     -webkit-overflow-scrolling: touch;
-    margin: 0;
 }
 
 * {
@@ -1923,8 +1919,7 @@ if (CLEAN_MODE) {
          */
         var content_bbox = getBoundingClientRect(document.querySelectorAll('#question-modal .modal-body')[0])
         var position_of_top = content_bbox.top;
-        var viewportHeight = (window.visualViewport ? window.visualViewport.height : window.innerHeight);
-        var position_of_bottom = viewportHeight - 8;
+        var position_of_bottom = window.innerHeight - 8;
         var h = Math.max(220, position_of_bottom - position_of_top)
 
         document.querySelectorAll('#question-modal .modal-inner')[0].style.maxHeight = h + "px";
@@ -1938,7 +1933,7 @@ if (CLEAN_MODE) {
         q.style.display = "none";
 
 
-        div_modal.style.transform = "translate(" + bbox.left + "px, " + bbox.top  + "px) scale(" + (bbox.width/window.innerWidth) + ", " + (bbox.height / viewportHeight) + ")"
+        div_modal.style.transform = "translate(" + bbox.left + "px, " + bbox.top  + "px) scale(" + (bbox.width/window.innerWidth) + ", " + (bbox.height / window.innerHeight) + ")"
         div_modal.style.opacity = 1;
 
         removeClass(".expanded", "expanded");
@@ -2032,7 +2027,6 @@ body::before {
 
 .grid {
     height: calc(100vh - var(--app-bottom-bar-h)) !important;
-    height: calc(100dvh - var(--app-bottom-bar-h)) !important;
 }
 
 #scoreboard-panel {
@@ -4830,18 +4824,16 @@ var waves = [shuffleArray(even.slice()), shuffleArray(odd.slice())];        var 
     if(typeof window.getQuestionModalBottomLimit !== "function"){
         window.getQuestionModalBottomLimit = function getQuestionModalBottomLimit() {
             var bottomPanel = document.getElementById("scoreboard-panel");
-            var viewportHeight = (window.visualViewport ? window.visualViewport.height : window.innerHeight);
-            if(!bottomPanel){ return Math.max(420, viewportHeight - 170); }
-            return Math.min(viewportHeight - 4, bottomPanel.getBoundingClientRect().top);
+            if(!bottomPanel){ return Math.max(420, window.innerHeight - 170); }
+            return Math.min(window.innerHeight - 4, bottomPanel.getBoundingClientRect().top);
         };
     }
 
     function refreshLayout(){
         var bottomPanel = document.getElementById("scoreboard-panel");
         var panelH = bottomPanel ? bottomPanel.getBoundingClientRect().height : 0;
-        var viewportHeight = (window.visualViewport ? window.visualViewport.height : window.innerHeight);
         if(window.grid){
-            var usable = Math.max(320, viewportHeight - panelH - 10);
+            var usable = Math.max(320, window.innerHeight - panelH - 10);
             window.grid.style.height = usable + "px";
             minirender(window.grid, function(g){ g.style.opacity = 1; }, 0.7);
         }
@@ -5392,7 +5384,7 @@ to { transform: rotate(360deg); }
 </head>
 <body>
 <div id="gameplay">
-<div aria-label="Game Board" class="grid grid-play" role="table">
+<div aria-label="Game Board" class="grid grid-play" role="table" style="height:100vh; ">
 <div class="grid-row grid-row-cats" role="row" style="">
 <div class="grid-cell" data-col="0" data-row="0">
 <div class="cell">
@@ -7375,9 +7367,8 @@ window.transferTriviaDeck = {};
 
   function getQuestionModalBottomLimit() {
     var bottomPanel = document.getElementById("scoreboard-panel");
-    var viewportHeight = (window.visualViewport ? window.visualViewport.height : window.innerHeight);
-    if (!bottomPanel) return viewportHeight - 8;
-    return Math.min(viewportHeight - 4, bottomPanel.getBoundingClientRect().top);
+    if (!bottomPanel) return window.innerHeight - 8;
+    return Math.min(window.innerHeight - 4, bottomPanel.getBoundingClientRect().top);
   }
 
   function refreshModalLayout() {
@@ -7711,8 +7702,7 @@ window.transferTriviaDeck = {};
 
     refreshModalLayoutWhenReady();
 
-    var viewportHeight = (window.visualViewport ? window.visualViewport.height : window.innerHeight);
-    div_modal.style.transform = "translate(" + bbox.left + "px, " + bbox.top + "px) scale(" + (bbox.width / window.innerWidth) + ", " + (bbox.height / viewportHeight) + ")";
+    div_modal.style.transform = "translate(" + bbox.left + "px, " + bbox.top + "px) scale(" + (bbox.width / window.innerWidth) + ", " + (bbox.height / window.innerHeight) + ")";
     div_modal.style.opacity = 1;
 
     removeClass(".expanded", "expanded");
