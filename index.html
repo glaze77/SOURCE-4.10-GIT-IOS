@@ -83,13 +83,14 @@ h3, .point-cell {
 }
 
 #teams {
-    position:absolute;
+    position:fixed;
     bottom:0;
     text-align:center;
     left:0;
     right:0;
     z-index:11;
     display:flex;
+    padding-bottom:env(safe-area-inset-bottom, 0px);
     /*display:none;*/
     /*
     align-items:baseline;
@@ -192,11 +193,12 @@ h3, .point-cell {
 #gameplay {
     filter:blur(5px);
     width:100%;
-    position:absolute;
+    position:fixed;
     top:0;
     left:0;
     bottom:0;
     right:0;
+    overflow:hidden;
 }
 
 #fullscreen {
@@ -465,6 +467,60 @@ kbd
 
     }
 
+}
+
+/* iOS safe area and fullscreen support */
+#teams {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+#gameplay {
+    padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* iOS pseudo-fullscreen: hide nothing extra — the scroll-to-top trick
+   collapses Safari's chrome; this class just smooths the transition */
+body.tt-ios-fullscreen #gameplay {
+    top: 0;
+}
+
+/* iOS "Add to Home Screen" prompt */
+#tt-ios-prompt {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 99999;
+    background: rgba(0,0,0,0.82);
+    padding: 0 0 env(safe-area-inset-bottom, 0px) 0;
+    animation: tt-slide-up 0.3s ease;
+}
+@keyframes tt-slide-up {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+}
+#tt-ios-prompt-inner {
+    padding: 20px 24px 18px;
+    color: #fff;
+    font-family: Verdana, Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    text-align: center;
+}
+#tt-ios-prompt-inner p {
+    margin: 0 0 10px;
+}
+#tt-ios-prompt-close {
+    margin-top: 10px;
+    background: #fff;
+    color: #222;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 28px;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    min-height: 44px;
 }
 
             </style>
@@ -1299,15 +1355,11 @@ if (CLEAN_MODE) {
         }
 
         function resize(){
-            var bbox_teams = getBoundingClientRect(document.getElementById("teams"))
             var viewportHeight = (window.visualViewport ? window.visualViewport.height : window.innerHeight);
-            var rows = document.querySelectorAll(".grid-row").length;
-            if(bbox_teams.height == 0){
-                var h = viewportHeight;
-            } else {
-                var h = bbox_teams.top + ((viewportHeight - bbox_teams.height) / (rows))/4
-            }
-
+            var teamsEl = document.getElementById("teams");
+            var teamsHeight = teamsEl ? teamsEl.getBoundingClientRect().height : 0;
+            // Grid should fill the viewport minus the fixed teams bar at the bottom
+            var h = teamsHeight > 0 ? (viewportHeight - teamsHeight) : viewportHeight;
             grid.style.height = h + "px";
             minirender(grid, function(g){
                 g.style.opacity = 1;
@@ -2026,7 +2078,7 @@ body::before {
 }
 
 .grid {
-    height: calc(100vh - var(--app-bottom-bar-h)) !important;
+    height: calc(100dvh - var(--app-bottom-bar-h)) !important;
 }
 
 #scoreboard-panel {
@@ -4595,7 +4647,90 @@ var waves = [shuffleArray(even.slice()), shuffleArray(odd.slice())];        var 
     showIntroScreen();
 }
 
+    var iosFullscreenActive = false;
+
+    function isIOS(){
+        return /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+               (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    }
+
+    function isStandalone(){
+        return !!navigator.standalone;
+    }
+
+    function enterIOSFullscreen(){
+        // Scroll window to 0 to hide the Safari address bar
+        window.scrollTo(0, 1);
+        iosFullscreenActive = true;
+        document.body.classList.add('tt-ios-fullscreen');
+        // Recalculate layout after chrome collapses
+        setTimeout(function(){ if(typeof resize === 'function'){ resize(); } }, 400);
+        var btn = document.getElementById('fullscreen-btn');
+        if(btn){
+            btn.title = 'Exit Full Screen';
+            btn.setAttribute('aria-label', 'Exit Full Screen');
+            // Swap icon to an X/exit icon
+            var iconSpan = btn.querySelector('.draw-tool-icon');
+            if(iconSpan){
+                iconSpan.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 16v3h3v2H3v-5h2Zm16 0v5h-5v-2h3v-3h2ZM8 3v2H5v3H3V3h5Zm13 0v5h-2V5h-3V3h5Z"/></svg>';
+            }
+        }
+    }
+
+    function exitIOSFullscreen(){
+        window.scrollTo(0, 0);
+        iosFullscreenActive = false;
+        document.body.classList.remove('tt-ios-fullscreen');
+        setTimeout(function(){ if(typeof resize === 'function'){ resize(); } }, 400);
+        var btn = document.getElementById('fullscreen-btn');
+        if(btn){
+            btn.title = 'Full Screen';
+            btn.setAttribute('aria-label', 'Full Screen');
+            var iconSpan = btn.querySelector('.draw-tool-icon');
+            if(iconSpan){
+                iconSpan.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 10V4h6v2H6v4H4Zm10-6h6v6h-2V6h-4V4ZM4 20v-6h2v4h4v2H4Zm14-2v-4h2v6h-6v-2h4Z"/></svg>';
+            }
+        }
+    }
+
+    function showIOSAddToHomePrompt(){
+        if(document.getElementById('tt-ios-prompt')){ return; }
+        var prompt = document.createElement('div');
+        prompt.id = 'tt-ios-prompt';
+        prompt.innerHTML =
+            '<div id="tt-ios-prompt-inner">' +
+            '<p>For true full screen, add this page to your <strong>Home Screen</strong>:</p>' +
+            '<p>Tap <strong>Share</strong> &#xfe0f; then <strong>"Add to Home Screen"</strong></p>' +
+            '<button id="tt-ios-prompt-close">Got it</button>' +
+            '</div>';
+        document.body.appendChild(prompt);
+        document.getElementById('tt-ios-prompt-close').addEventListener('click', function(){
+            prompt.parentNode.removeChild(prompt);
+        });
+    }
+
     function toggleFullscreen(){
+        if(isIOS()){
+            if(isStandalone()){
+                // Already running as installed PWA — already fullscreen, nothing to do
+                return;
+            }
+            if(iosFullscreenActive){
+                exitIOSFullscreen();
+            } else {
+                enterIOSFullscreen();
+                // After a delay, if chrome didn't fully hide, offer the home screen tip
+                setTimeout(function(){
+                    var vvh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+                    var sh = window.screen.height;
+                    if(vvh < sh * 0.9){
+                        showIOSAddToHomePrompt();
+                    }
+                }, 800);
+            }
+            return;
+        }
+        // Desktop / Android: use standard Fullscreen API
         var doc = document;
         var docEl = document.documentElement;
         if(!doc.fullscreenElement && !doc.webkitFullscreenElement && !doc.msFullscreenElement){
@@ -5384,7 +5519,7 @@ to { transform: rotate(360deg); }
 </head>
 <body>
 <div id="gameplay">
-<div aria-label="Game Board" class="grid grid-play" role="table" style="height:100vh; ">
+<div aria-label="Game Board" class="grid grid-play" role="table" style="">
 <div class="grid-row grid-row-cats" role="row" style="">
 <div class="grid-cell" data-col="0" data-row="0">
 <div class="cell">
@@ -5687,9 +5822,12 @@ to { transform: rotate(360deg); }
 <input id="re-init" type="button" value="Reset"/>
 </span>
 </div>
-<p align="center" id="fullscreen" style="display:none"><span id="windows" style="display:none">Press <kbd>F11</kbd></span> <span id="mac" style="display:none">Select menu option <kbd>View &gt; Enter Fullscreen</kbd></span> for full-screen mode</p>
+<p align="center" id="fullscreen" style="display:none"><span id="windows" style="display:none">Press <kbd>F11</kbd></span> <span id="mac" style="display:none">Select menu option <kbd>View &gt; Enter Fullscreen</kbd></span><span id="ios-fs" style="display:none">Tap the <strong>Full Screen</strong> button in the toolbar, or add to Home Screen for true full screen</span> for full-screen mode</p>
 <script>
-                if(window.navigator.platform.indexOf("Mac") == 0){
+                if(/iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)){
+                    document.getElementById("fullscreen").style.display = "block";
+                    document.getElementById("ios-fs").style.display = "inline";
+                } else if(window.navigator.platform.indexOf("Mac") == 0){
                     document.getElementById("fullscreen").style.display = "block";
                     document.getElementById("mac").style.display = "inline";
                 } else if(window.navigator.platform.indexOf("Win") == 0){
@@ -8277,6 +8415,11 @@ body.tt-drawing-active #tt-meter-stage * {
         e.stopPropagation();
         if (typeof window.toggleFullscreen === 'function') { window.toggleFullscreen(); }
       });
+      fullscreenBtn.addEventListener('touchend', function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof window.toggleFullscreen === 'function') { window.toggleFullscreen(); }
+      }, { passive: false });
     }
 
     if (resetBtn) {
