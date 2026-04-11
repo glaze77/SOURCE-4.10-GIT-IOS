@@ -1334,6 +1334,49 @@ body.tt-drawing-active #tt-meter-stage * { pointer-events: auto; }
   .intro-copy { font-size: 12px; }
 }
 
+/* ─── Landscape mobile: PC-like 16:9 layout ─── */
+@media (orientation: landscape) and (max-height: 500px) {
+  /* Shrink the bottom-bar reservation so the board fills the viewport like PC */
+  :root { --app-bottom-bar-h: 140px; }
+
+  /* Scoreboard: compact single-pass fit for short landscape height */
+  .scoreboard-shell { padding: 4px 10px 5px; }
+  .scoreboard-grid { gap: 5px; }
+  .score-entry {
+    grid-template-columns: 28px minmax(0,1fr) 36px;
+    padding: 4px 6px 3px;
+    row-gap: 3px;
+    border-radius: 9px;
+  }
+  .score-value { font-size: 18px; min-height: 18px; padding-top: 0; }
+  .score-undo { width: 26px; height: 24px; border-radius: 7px; font-size: 12px; }
+  .score-add-wrap { width: 36px; height: 24px; }
+  .score-add-btn { width: 36px; height: 24px; border-radius: 7px; font-size: 13px; }
+  .score-name { padding: 4px 6px; font-size: 11px; border-radius: 7px; }
+
+  /* Intro card: override height-based queries, match PC centered look */
+  .intro-copy-media { display: flex; margin: 3px 0 1px; }
+  .intro-copy-media img { width: auto; max-height: 48px; border-radius: 6px; }
+  .intro-copy-media.hand img { max-width: 100px; }
+  .intro-card { padding: 10px 20px 9px; border-radius: 18px; }
+  .intro-eyebrow { font-size: 9px; margin-bottom: 3px; }
+  .intro-card h1 { font-size: 18px; margin-bottom: 4px; }
+  .intro-copy { font-size: 12px; line-height: 1.3; margin-bottom: 4px; }
+  .intro-copy li { margin-bottom: 3px; }
+  .intro-actions { margin-top: 8px; gap: 7px; }
+  .intro-btn { min-height: 36px; padding: 6px 12px; min-width: 120px; font-size: 13px; }
+  .intro-btn.primary { min-width: 140px; }
+  .load-btn { min-width: 120px; font-size: 15px; padding: 8px 14px; }
+
+  /* Vice-title: scaled down, stays bottom-left like PC */
+  .vice-title { left: 12px; bottom: 10px; width: min(24vw, 200px); }
+  .vice-title-top { font-size: clamp(24px, 4vh, 40px); }
+  .vice-title-bottom { font-size: clamp(36px, 6.5vh, 64px); margin-top: -8px; }
+
+  /* Palms: shorter so they don't dominate the landscape frame */
+  .intro-palm { height: min(85vh, 380px); max-width: 18vw; }
+}
+
 /* ═══════════════════════════════════════════════════════════════
    9. IOS FULLSCREEN HELPERS
 ════════════════════════════════════════════════════════════════ */
@@ -4580,7 +4623,8 @@ var waves = [shuffleArray(even.slice()), shuffleArray(odd.slice())];        var 
         var bottomPanel = document.getElementById("scoreboard-panel");
         var panelH = bottomPanel ? bottomPanel.getBoundingClientRect().height : 0;
         if(window.grid){
-            var usable = Math.max(320, window.innerHeight - panelH - 10);
+            var isLandMob = window.innerWidth > window.innerHeight && window.innerHeight < 550;
+            var usable = Math.max(isLandMob ? 180 : 320, window.innerHeight - panelH - 10);
             window.grid.style.height = usable + "px";
             minirender(window.grid, function(g){ g.style.opacity = 1; }, 0.7);
         }
