@@ -39,6 +39,8 @@
   --tt-control-lane-w: 55px;
   --tt-control-lane-gap: 18px;
   --tt-control-lane-reserve: calc(var(--tt-control-lane-w) + var(--tt-control-lane-gap) + 14px);
+  --tt-rail-size: 74px;
+  --tt-rail-gap: 12px;
   --accent: #ffd22a;
   --glass-bg: rgba(10, 19, 71, 0.86);
   --glass-border: rgba(255,255,255,.14);
@@ -882,6 +884,14 @@ kbd {
   letter-spacing: .03em; text-transform: uppercase; color: var(--accent);
   text-shadow: 0 0 24px rgba(255,210,42,.20);
 }
+.tt-clue-splash-subtitle {
+  margin-top: 10px;
+  font-size: clamp(16px,2.2vw,24px);
+  line-height: 1.25;
+  font-weight: 700;
+  color: rgba(255,255,255,.92);
+  text-align: center;
+}
 .tt-clue-splash-actions { margin-top: 28px; display: flex; justify-content: center; }
 #tt-clue-splash-continue { min-width: 220px; transition: transform .12s ease; }
 #tt-clue-splash-continue:active { transform: scale(.98); }
@@ -1346,6 +1356,74 @@ kbd {
 .draw-tool-icon.pointer    { color: #ffffff; }
 .draw-tool-icon.eraser     { color: #ffffff; }
 .draw-tool-icon.meter      { color: #ffd548; }
+
+/* Hint hub (below draw tools) */
+#tt-hint-hub {
+  position: fixed;
+  right: 14px;
+  top: calc(14px + (var(--tt-rail-size, 74px) * 3) + (var(--tt-rail-gap, 12px) * 2) + 14px);
+  width: 74px;
+  z-index: 13058;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity .25s ease, transform .25s ease, visibility .25s ease;
+}
+#tt-hint-hub.visible { opacity: 1; visibility: visible; pointer-events: auto; }
+#tt-hint-btn {
+  width: 74px; height: 74px; border-radius: 22px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.03) 100%), linear-gradient(180deg, rgba(14,29,115,0.94) 0%, rgba(8,19,79,0.98) 100%);
+  color: #fff; display: inline-flex; align-items: center; justify-content: center;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 18px 34px rgba(0,0,0,0.30);
+  cursor: pointer; padding: 0; opacity: 0.88;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+}
+#tt-hint-btn:hover, #tt-hint-btn:focus-visible {
+  outline: none; opacity: 1; border-color: rgba(255,255,255,0.28); transform: translateY(-1px);
+}
+#tt-hint-btn .draw-tool-icon { width: 24px; height: 24px; }
+#tt-hint-btn.is-used {
+  border-color: rgba(255,220,126,.58);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), 0 18px 34px rgba(0,0,0,0.30), 0 0 22px rgba(255,220,126,.22);
+}
+#tt-hint-panel {
+  position: absolute;
+  right: calc(100% + 12px);
+  top: 50%;
+  transform: translateY(-50%) translateX(8px) scale(0.98);
+  width: min(340px, calc(100vw - 130px));
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.16);
+  background: linear-gradient(180deg, rgba(14,25,93,.96), rgba(6,14,53,.96));
+  box-shadow: 0 22px 50px rgba(0,0,0,.42);
+  padding: 14px 14px 12px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity .2s ease, transform .2s ease, visibility .2s ease;
+}
+#tt-hint-hub.open #tt-hint-panel { opacity: 1; visibility: visible; pointer-events: auto; transform: translateY(-50%) translateX(0) scale(1); }
+.tt-hint-title {
+  font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: #fff; margin-bottom: 8px;
+}
+.tt-hint-box {
+  min-height: 74px; border-radius: 10px; border: 1px dashed rgba(255,255,255,.28);
+  background: rgba(255,255,255,.05); color: rgba(255,255,255,.68);
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  padding: 10px; font-size: 13px; line-height: 1.35;
+}
+.tt-hint-actions { display: flex; justify-content: space-between; gap: 8px; margin-top: 10px; }
+.tt-hint-action-btn {
+  flex: 1 1 auto; min-height: 34px; border-radius: 8px; border: 1px solid rgba(255,255,255,.20);
+  background: rgba(255,255,255,.08); color: #fff; font-weight: 700; cursor: pointer;
+}
+.tt-hint-action-btn:hover, .tt-hint-action-btn:focus-visible { outline: none; filter: brightness(1.08); }
+.tt-hint-action-btn.primary {
+  color: #1d2458; border-color: rgba(255,231,132,.6); background: linear-gradient(90deg, #ffd743, #ffe97e);
+}
+.tt-hint-action-btn:disabled { opacity: .58; cursor: default; }
+.tt-hint-note { margin-top: 8px; font-size: 12px; line-height: 1.3; color: rgba(255,255,255,.72); text-align: center; }
 #tt-draw-layer, #tt-meter-stage {
   position: fixed; left: 0; right: 0; top: 86px; bottom: 108px;
   width: 100%; height: calc(100dvh - 194px); display: none; touch-action: none;
@@ -1395,18 +1473,24 @@ body.tt-drawing-active #tt-meter-stage * { pointer-events: auto; }
 
 /* Draw tools responsive */
 @media (max-width: 1180px) {
-  :root { --tt-control-lane-w: 92px; --tt-control-lane-gap: 14px; --tt-control-lane-reserve: calc(var(--tt-control-lane-w) + var(--tt-control-lane-gap) + 10px); }
+  :root { --tt-control-lane-w: 92px; --tt-control-lane-gap: 14px; --tt-control-lane-reserve: calc(var(--tt-control-lane-w) + var(--tt-control-lane-gap) + 10px); --tt-rail-size: 66px; }
   .draw-rail-btn, #draw-tools-trigger { width: 66px; height: 66px; border-radius: 20px; }
   #draw-tools-hub .draw-tools-menu { grid-template-columns: repeat(2, 68px); grid-auto-rows: 68px; }
   .draw-tool-btn { width: 68px; height: 68px; border-radius: 20px; }
+  #tt-hint-hub { width: 66px; right: 14px; }
+  #tt-hint-btn { width: 66px; height: 66px; border-radius: 20px; }
 }
 @media (max-width: 900px) {
+  :root { --tt-rail-size: 62px; }
   #draw-tools-hub { right: 12px; top: 16px; width: 62px; }
   .draw-rail-btn, #draw-tools-trigger { width: 62px; height: 62px; border-radius: 18px; }
   #draw-tools-hub .draw-tools-menu { right: calc(100% + 12px); grid-template-columns: repeat(2, 62px); grid-auto-rows: 62px; }
   .draw-tool-btn { width: 62px; height: 62px; border-radius: 18px; }
   .draw-tool-icon { width: 22px; height: 22px; }
   .tt-meter-stamp { width: 132px; }
+  #tt-hint-hub { right: 12px; width: 62px; }
+  #tt-hint-btn { width: 62px; height: 62px; border-radius: 18px; }
+  #tt-hint-panel { width: min(300px, calc(100vw - 108px)); }
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -3095,6 +3179,19 @@ if (CLEAN_MODE) {
                 var active_question = document.querySelectorAll(".active-question .cell-inner")[0];
                 var fallback = document.querySelectorAll(".grid-row-questions .cell-inner")[0];
                 var val = parseInt(active_question ? active_question.innerText : fallback.innerText, 10);
+                var clueMultiplier = 1;
+                try {
+                    if(typeof window.getCurrentCluePointMultiplier === "function"){
+                        clueMultiplier = Number(window.getCurrentCluePointMultiplier()) || 1;
+                    }
+                } catch (err) {}
+                var clueHintFactor = 1;
+                try {
+                    if(typeof window.getCurrentClueHintFactor === "function"){
+                        clueHintFactor = Number(window.getCurrentClueHintFactor()) || 1;
+                    }
+                } catch (err2) {}
+                val = val * clueMultiplier * clueHintFactor;
                 if(this.classList.contains("minus")){
                     val = -val;
                 }
@@ -3541,6 +3638,7 @@ if (CLEAN_MODE) {
                         rankAnimatedByTier: parsed.rankAnimatedByTier && typeof parsed.rankAnimatedByTier === "object" ? parsed.rankAnimatedByTier : {},
                         lockedWinnerIndex: typeof parsed.lockedWinnerIndex === "number" ? parsed.lockedWinnerIndex : null,
                         lockCelebrated: !!parsed.lockCelebrated,
+                        hintUsedByClue: parsed.hintUsedByClue && typeof parsed.hintUsedByClue === "object" ? parsed.hintUsedByClue : {},
                         streakPlayerIndex: typeof parsed.streakPlayerIndex === "number" ? parsed.streakPlayerIndex : null,
                         streakCount: Number(parsed.streakCount) > 0 ? Number(parsed.streakCount) : 0
                     };
@@ -3555,6 +3653,7 @@ if (CLEAN_MODE) {
             rankAnimatedByTier: {},
             lockedWinnerIndex: null,
             lockCelebrated: false,
+            hintUsedByClue: {},
             streakPlayerIndex: null,
             streakCount: 0
         };
@@ -3568,17 +3667,23 @@ if (CLEAN_MODE) {
     }
 
     function getCurrentCluePoints(){
+        var basePoints = 0;
         var activeQuestion = document.querySelector(".active-question .cell-inner");
         if(activeQuestion){
             var parsed = parseInt((activeQuestion.textContent || "").replace(/[^0-9]/g, ""), 10);
-            if(!isNaN(parsed)){ return parsed; }
+            if(!isNaN(parsed)){ basePoints = parsed; }
         }
-        var title = document.getElementById("question-title");
-        if(title){
-            var match = (title.textContent || "").match(/for\s+(\d+)/i);
-            if(match){ return parseInt(match[1], 10); }
+        if(basePoints <= 0){
+            var title = document.getElementById("question-title");
+            if(title){
+                var match = (title.textContent || "").match(/for\s+(\d+)/i);
+                if(match){ basePoints = parseInt(match[1], 10); }
+            }
         }
-        return 0;
+        if(!basePoints || isNaN(basePoints)){ return 0; }
+        var multiplier = Number(getCurrentCluePointMultiplier && getCurrentCluePointMultiplier()) || 1;
+        var hintFactor = Number(getCurrentClueHintFactor && getCurrentClueHintFactor()) || 1;
+        return Math.round(basePoints * multiplier * hintFactor);
     }
 
     function getCurrentClueId(){
@@ -3586,6 +3691,16 @@ if (CLEAN_MODE) {
         if(activeQuestion && activeQuestion.id){ return activeQuestion.id; }
         if(window.ttCurrentClueId){ return window.ttCurrentClueId; }
         return null;
+    }
+
+    function getClueHintFactor(clueId){
+        if(!clueId){ return 1; }
+        var used = !!(state && state.hintUsedByClue && state.hintUsedByClue[clueId]);
+        return used ? 0.5 : 1;
+    }
+
+    function getCurrentClueHintFactor(){
+        return getClueHintFactor(getCurrentClueId());
     }
 
     function hasPendingScoreLock(){
@@ -3615,6 +3730,95 @@ if (CLEAN_MODE) {
         }
     }
 
+    function ensureHintHub(){
+        var hub = document.getElementById("tt-hint-hub");
+        if(hub){ return hub; }
+        hub = document.createElement("div");
+        hub.id = "tt-hint-hub";
+        hub.innerHTML = ''
+            + '<button type="button" id="tt-hint-btn" aria-label="Hint" title="Hint">'
+            + '  <span class="draw-tool-icon rail hint"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2.5a7.5 7.5 0 0 0-4.8 13.3c.7.6 1.2 1.3 1.4 2.2h6.8c.2-.9.7-1.6 1.4-2.2A7.5 7.5 0 0 0 12 2.5Zm-2.2 17.4h4.4v.9a2.2 2.2 0 0 1-4.4 0v-.9Z"/></svg></span>'
+            + '</button>'
+            + '<div id="tt-hint-panel" role="dialog" aria-modal="false" aria-label="Hint panel">'
+            + '  <div class="tt-hint-title">Hint</div>'
+            + '  <div class="tt-hint-box" id="tt-hint-box"></div>'
+            + '  <div class="tt-hint-actions">'
+            + '    <button type="button" class="tt-hint-action-btn primary" id="tt-hint-give-btn">Give Hint (50%)</button>'
+            + '    <button type="button" class="tt-hint-action-btn" id="tt-hint-close-btn">Close</button>'
+            + '  </div>'
+            + '  <div class="tt-hint-note">If a hint is given, this clue is worth 50% points.</div>'
+            + '</div>';
+        document.body.appendChild(hub);
+
+        var hintBtn = document.getElementById("tt-hint-btn");
+        var giveBtn = document.getElementById("tt-hint-give-btn");
+        var closeBtn = document.getElementById("tt-hint-close-btn");
+        var hintBox = document.getElementById("tt-hint-box");
+        if(hintBox){ hintBox.textContent = ""; }
+
+        if(hintBtn){
+            hintBtn.addEventListener("click", function(e){
+                if(e){ e.preventDefault(); e.stopPropagation(); }
+                hub.classList.toggle("open");
+                updateHintHubState();
+            });
+        }
+        if(giveBtn){
+            giveBtn.addEventListener("click", function(e){
+                if(e){ e.preventDefault(); e.stopPropagation(); }
+                markCurrentClueHintUsed();
+                updateHintHubState();
+            });
+        }
+        if(closeBtn){
+            closeBtn.addEventListener("click", function(e){
+                if(e){ e.preventDefault(); e.stopPropagation(); }
+                hub.classList.remove("open");
+            });
+        }
+        document.addEventListener("click", function(e){
+            if(!hub.contains(e.target)){ hub.classList.remove("open"); }
+        });
+        return hub;
+    }
+
+    function updateHintHubState(){
+        var hub = ensureHintHub();
+        var clueId = getCurrentClueId();
+        var hintUsed = clueId ? (getClueHintFactor(clueId) < 1) : false;
+        var hintBtn = document.getElementById("tt-hint-btn");
+        var giveBtn = document.getElementById("tt-hint-give-btn");
+        if(hintBtn){
+            hintBtn.classList.toggle("is-used", !!hintUsed);
+        }
+        if(giveBtn){
+            giveBtn.disabled = !clueId || !!hintUsed;
+            giveBtn.textContent = hintUsed ? "Hint Given (50%)" : "Give Hint (50%)";
+        }
+    }
+
+    function updateHintHubVisibility(){
+        var hub = ensureHintHub();
+        var modalEl = document.getElementById("question-modal");
+        var visible = !!(modalEl && modalEl.style.display !== "none" && getComputedStyle(modalEl).display !== "none");
+        hub.classList.toggle("visible", visible);
+        if(!visible){
+            hub.classList.remove("open");
+        }
+        updateHintHubState();
+    }
+
+    function markCurrentClueHintUsed(){
+        var clueId = getCurrentClueId();
+        if(!clueId){ return; }
+        if(!state.hintUsedByClue || typeof state.hintUsedByClue !== "object"){
+            state.hintUsedByClue = {};
+        }
+        state.hintUsedByClue[clueId] = true;
+        saveState();
+        render();
+    }
+
     function answeredCount(){
         return document.querySelectorAll(".grid-row-questions .inert").length;
     }
@@ -3639,7 +3843,9 @@ if (CLEAN_MODE) {
             if(!inner){ return; }
             var points = parseInt((inner.textContent || "").replace(/[^0-9]/g, ""), 10);
             if(!isNaN(points) && points > 0){
-                total += points;
+                var multiplier = Number(getCluePointMultiplier(getClueEntry(cell))) || 1;
+                var hintFactor = Number(getClueHintFactor(cell.id)) || 1;
+                total += Math.round(points * multiplier * hintFactor);
             }
         });
         return total;
@@ -3809,6 +4015,7 @@ if (CLEAN_MODE) {
 function render(){
         var grid = document.getElementById("scoreboard-grid");
         if(!grid){ return; }
+        updateHintHubVisibility();
 
         var scoringReady = isRevealScoringEnabled();
         var currentCluePoints = getCurrentCluePoints();
@@ -4586,6 +4793,28 @@ function render(){
         }
     }
 
+    function startIntroMusicForFinale(delayMs){
+        var music = ensureIntroMusic();
+        if(!music){ return; }
+        var delay = Math.max(0, Number(delayMs) || 0);
+        setTimeout(function(){
+            try {
+                music.loop = true;
+                music.currentTime = 0;
+                applyAudioElementVolume(music, 'introMusic');
+                music.muted = false;
+                introMusicMuted = false;
+                introMusicArmed = true;
+                introMusicPrimed = true;
+                var playPromise = music.play();
+                if(playPromise && typeof playPromise.catch === 'function'){
+                    playPromise.catch(function(){});
+                }
+            } catch (e) {}
+            updateIntroMusicButton();
+        }, delay);
+    }
+
     function toggleIntroMusicMute(e){
         if(e){
             e.preventDefault();
@@ -4789,13 +5018,46 @@ function render(){
 
     var clueSplashHideTimer = null;
     var clueSplashContinueHandler = null;
-    function getClueSplashLabel(entry){
-        if(!entry){ return ""; }
+    function getCluePointMultiplier(entry){
+        if(!entry){ return 1; }
+        var meta = entry && entry.meta && typeof entry.meta === "object" ? entry.meta : {};
+        var explicitMultiplier = Number(meta.pointMultiplier);
+        if(!isNaN(explicitMultiplier) && explicitMultiplier > 0){
+            return explicitMultiplier;
+        }
+        var clueType = String(meta.clueType || "").toLowerCase();
+        if(clueType === "troubleshooting" || clueType === "two-part"){
+            return 2;
+        }
+        var badges = Array.isArray(meta.badges) ? meta.badges : [];
+        if(badges.indexOf("troubleshooting") !== -1 || badges.indexOf("two-part") !== -1){
+            return 2;
+        }
+        return 1;
+    }
+
+    function getCurrentCluePointMultiplier(){
+        return getCluePointMultiplier(getClueEntry());
+    }
+
+    function getClueSplashData(entry){
+        if(!entry){ return null; }
         var meta = entry && entry.meta && typeof entry.meta === "object" ? entry.meta : {};
         var badges = Array.isArray(meta.badges) ? meta.badges : [];
-        if(badges.indexOf("troubleshooting") !== -1){ return "Troubleshooting"; }
-        if(badges.indexOf("two-part") !== -1){ return "Two Part Question"; }
-        return "";
+        var label = "";
+        if(badges.indexOf("troubleshooting") !== -1){ label = "Troubleshooting"; }
+        else if(badges.indexOf("two-part") !== -1){ label = "Two Part Question"; }
+        else {
+            var clueType = String(meta.clueType || "").toLowerCase();
+            if(clueType === "troubleshooting"){ label = "Troubleshooting"; }
+            if(clueType === "two-part"){ label = "Two Part Question"; }
+        }
+        if(!label){ return null; }
+        var multiplier = getCluePointMultiplier(entry);
+        return {
+            label: label,
+            detail: multiplier > 1 ? ("Rule: This clue is worth " + multiplier + "x points.") : ""
+        };
     }
 
     function ensureClueSplashOverlay(){
@@ -4808,6 +5070,7 @@ function render(){
         overlay.innerHTML = ''
             + '<div class="tt-clue-splash-card" role="dialog" aria-modal="true" aria-label="Special clue notice">'
             + '  <div class="tt-clue-splash-title" id="tt-clue-splash-title"></div>'
+            + '  <div class="tt-clue-splash-subtitle" id="tt-clue-splash-subtitle"></div>'
             + '  <div class="tt-clue-splash-actions"><button type="button" class="load-btn" id="tt-clue-splash-continue">Continue</button></div>'
             + '</div>';
         document.body.appendChild(overlay);
@@ -4840,15 +5103,17 @@ function render(){
         }, 200);
     }
 
-    function showClueSplash(label, onContinue){
+    function showClueSplash(data, onContinue){
         var overlay = ensureClueSplashOverlay();
         var title = document.getElementById("tt-clue-splash-title");
+        var subtitle = document.getElementById("tt-clue-splash-subtitle");
         var continueBtn = document.getElementById("tt-clue-splash-continue");
-        if(!overlay || !title || !continueBtn){
+        if(!overlay || !title || !subtitle || !continueBtn){
             if(typeof onContinue === "function"){ onContinue(); }
             return;
         }
-        title.textContent = label;
+        title.textContent = data && data.label ? data.label : "";
+        subtitle.textContent = data && data.detail ? data.detail : "";
         clueSplashContinueHandler = onContinue;
         overlay.setAttribute("aria-hidden", "false");
         overlay.classList.remove("closing");
@@ -4864,21 +5129,24 @@ function render(){
             return;
         }
         var entry = getClueEntry(cell);
-        var splashLabel = getClueSplashLabel(entry);
-        if(!splashLabel){
+        var splashData = getClueSplashData(entry);
+        if(!splashData){
             modal.show(cell);
             return;
         }
-        showClueSplash(splashLabel, function(){
+        showClueSplash(splashData, function(){
             modal.show(cell);
         });
     }
     window.openClueWithBadgeSplash = openClueWithBadgeSplash;
+    window.getCluePointMultiplier = getCluePointMultiplier;
+    window.getCurrentCluePointMultiplier = getCurrentCluePointMultiplier;
 
     function isDailyDoubleClue(entry){
         if(!entry){ return false; }
         var parts = Array.isArray(entry.answerParts) ? entry.answerParts : [];
-        var badges = Array.isArray(entry.badges) ? entry.badges : [];
+        var meta = entry && entry.meta && typeof entry.meta === "object" ? entry.meta : {};
+        var badges = Array.isArray(meta.badges) ? meta.badges : [];
         return parts.length > 1 || badges.indexOf('two-part') !== -1 || badges.indexOf('troubleshooting') !== -1;
     }
 
@@ -5534,6 +5802,8 @@ function render(){
                 var pp = aud.play(); if(pp && pp.catch){ pp.catch(function(){}); }
             } catch(e){}
         }
+        /* Bring back the intro theme as a finale bed right after victory starts. */
+        startIntroMusicForFinale(180);
 
         /* Board sparkle */
         finaleTimers.push(setTimeout(function(){ runBoardFinaleSparkle(7600); }, 280));
@@ -5744,6 +6014,7 @@ function render(){
         rankAnimatedByTier: {},
         lockedWinnerIndex: null,
         lockCelebrated: false,
+        hintUsedByClue: {},
         streakPlayerIndex: null,
         streakCount: 0
     };
@@ -5863,6 +6134,8 @@ function render(){
     window.showIntroScreen = showIntroScreen;
     window.resetGame = resetGame;
     window.toggleFullscreen = toggleFullscreen;
+    window.getClueHintFactor = getClueHintFactor;
+    window.getCurrentClueHintFactor = getCurrentClueHintFactor;
 
     function injectModalActions(){
         if(document.getElementById("sound-actions")){ return; }
@@ -5952,6 +6225,7 @@ function render(){
 
         document.body.appendChild(panel);
         document.body.appendChild(intro);
+        ensureHintHub();
         document.getElementById("intro-load-btn").addEventListener("click", function(){
             ensureAudio();
             beginIntroSequence();
