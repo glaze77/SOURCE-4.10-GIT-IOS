@@ -779,6 +779,34 @@ kbd {
 }
 .tt-media-card img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; border-radius: 14px; }
 
+/* In-modal media stepper controls stay inside the image frame */
+.tt-media-stepper { position: relative; overflow: hidden; }
+.tt-media-stepper .tt-media-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(12,24,96,0.74);
+  color: #fff;
+  font-size: 30px;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.16);
+}
+.tt-media-stepper .tt-media-nav.prev { left: 10px; }
+.tt-media-stepper .tt-media-nav.next { right: 10px; }
+.tt-media-stepper .tt-media-nav:hover,
+.tt-media-stepper .tt-media-nav:focus-visible { outline: none; filter: brightness(1.12); }
+.tt-media-stepper.is-first .tt-media-nav.prev,
+.tt-media-stepper.is-last .tt-media-nav.next { opacity: 0.3; pointer-events: none; }
+
 /* Wrong answer X overlay */
 .tt-wrong-overlay {
   position: fixed; inset: 0; z-index: 15000;
@@ -797,15 +825,29 @@ kbd {
   padding: 24px; background: rgba(5,10,35,0.88); backdrop-filter: blur(10px); z-index: 9999;
 }
 .tt-lightbox.open { display: flex; }
-.tt-lightbox img { max-width: min(92vw,1600px); max-height: 88vh; object-fit: contain; border-radius: 18px; box-shadow: 0 24px 70px rgba(0,0,0,0.4); }
+.tt-lightbox-frame {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: min(92vw,1600px);
+  max-height: 88vh;
+}
+.tt-lightbox img {
+  max-width: 100%;
+  max-height: 88vh;
+  object-fit: contain;
+  border-radius: 18px;
+  box-shadow: 0 24px 70px rgba(0,0,0,0.4);
+}
 .tt-lightbox-nav {
   position: absolute; top: 50%; transform: translateY(-50%);
-  width: 48px; height: 48px; border: 0; border-radius: 999px;
+  z-index: 2; width: 48px; height: 48px; border: 0; border-radius: 999px;
   background: rgba(12,24,96,0.78); color: #fff; font-size: 34px; line-height: 1;
   cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
   box-shadow: 0 12px 28px rgba(0,0,0,0.36), inset 0 1px 0 rgba(255,255,255,0.16);
 }
-.tt-lightbox-nav.prev { left: 24px; } .tt-lightbox-nav.next { right: 24px; }
+.tt-lightbox-nav.prev { left: 12px; } .tt-lightbox-nav.next { right: 12px; }
 .tt-lightbox-nav:hover, .tt-lightbox-nav:focus-visible { outline: none; filter: brightness(1.14); }
 .tt-lightbox.single .tt-lightbox-nav { display: none; }
 .tt-lightbox.is-first .tt-lightbox-nav.prev,
@@ -6161,9 +6203,11 @@ window.transferTriviaDeck = {};
     lb.className = "tt-lightbox";
     lb.innerHTML = ''
       + '<button type="button" class="tt-lightbox-close" aria-label="Close image preview">×</button>'
-      + '<button type="button" class="tt-lightbox-nav prev" data-lightbox-nav="prev" aria-label="Previous image">&#8249;</button>'
-      + '<img class="tt-lightbox-image" alt="Expanded clue image" />'
-      + '<button type="button" class="tt-lightbox-nav next" data-lightbox-nav="next" aria-label="Next image">&#8250;</button>';
+      + '<div class="tt-lightbox-frame">'
+      + '  <button type="button" class="tt-lightbox-nav prev" data-lightbox-nav="prev" aria-label="Previous image">&#8249;</button>'
+      + '  <img class="tt-lightbox-image" alt="Expanded clue image" />'
+      + '  <button type="button" class="tt-lightbox-nav next" data-lightbox-nav="next" aria-label="Next image">&#8250;</button>'
+      + '</div>';
     lb.addEventListener("click", function(e) {
       if (e.target === lb || e.target.classList.contains("tt-lightbox-close")) {
         closeLightbox();
