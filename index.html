@@ -1196,6 +1196,74 @@ body.tt-drawing-active #tt-meter-stage * { pointer-events: auto; }
   transition: opacity .2s ease, transform .2s ease, visibility .2s ease;
 }
 #intro-overlay.sound-panel-open .intro-sound-panel { opacity: 1; visibility: visible; pointer-events: auto; transform: translateX(-50%) translateY(0); }
+.intro-sound-panel-top,
+.tt-global-sound-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin-bottom: 12px;
+}
+.intro-sound-panel-title,
+.tt-global-sound-title {
+  font-size: 15px; font-weight: 800; color: #fff; letter-spacing: .04em;
+}
+.intro-sound-row,
+.tt-global-sound-row {
+  display: grid;
+  grid-template-columns: minmax(118px, 132px) minmax(0, 1fr) auto 56px;
+  align-items: center;
+  gap: 10px;
+}
+.intro-sound-row + .intro-sound-row,
+.tt-global-sound-row + .tt-global-sound-row { margin-top: 10px; }
+.intro-sound-row label,
+.tt-global-sound-row label {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255,255,255,.9);
+  white-space: nowrap;
+}
+.intro-sound-row input[type="range"],
+.tt-global-sound-row input[type="range"] {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+}
+.intro-sound-preview-btn,
+.intro-sound-mute-btn,
+.global-sound-preview-btn {
+  min-width: 78px;
+  min-height: 34px;
+  margin: 0;
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: 8px;
+  background: rgba(255,255,255,.1);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  justify-self: end;
+}
+.intro-sound-preview-btn[aria-pressed="true"],
+.global-sound-preview-btn[aria-pressed="true"] {
+  background: rgba(255,210,42,.2);
+  border-color: rgba(255,210,42,.5);
+  color: #ffea9b;
+}
+.intro-sound-value,
+.tt-global-sound-value {
+  min-width: 56px;
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255,255,255,.82);
+  text-align: right;
+}
+.intro-sound-note,
+.tt-global-sound-note {
+  margin-top: 12px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: rgba(255,255,255,.7);
+}
 
 /* Intro player panel */
 .intro-player-panel {
@@ -1302,6 +1370,11 @@ body.tt-drawing-active #tt-meter-stage * { pointer-events: auto; }
   box-shadow: 0 20px 44px rgba(0,0,0,.38); padding: 18px 20px 16px;
   color: #fff;
 }
+.tt-global-sound-close, .tt-global-player-close {
+  width: 34px; height: 34px; border: 1px solid rgba(255,255,255,.18);
+  border-radius: 8px; background: rgba(255,255,255,.08); color: #fff;
+  font-size: 20px; line-height: 1; cursor: pointer;
+}
 #tt-global-sound-backdrop, #tt-global-player-backdrop {
   position: fixed; inset: 0; z-index: 14099; background: transparent;
 }
@@ -1330,6 +1403,28 @@ body.tt-drawing-active #tt-meter-stage * { pointer-events: auto; }
 @media (max-height: 600px) {
   .intro-card h1 { font-size: 20px; }
   .intro-copy { font-size: 12px; }
+}
+@media (max-width: 560px) {
+  .intro-sound-row,
+  .tt-global-sound-row {
+    grid-template-columns: minmax(0, 1fr) auto 56px;
+  }
+  .intro-sound-row label,
+  .tt-global-sound-row label {
+    grid-column: 1;
+  }
+  .intro-sound-row button,
+  .tt-global-sound-row button {
+    grid-column: 2;
+  }
+  .intro-sound-row span,
+  .tt-global-sound-row span {
+    grid-column: 3;
+  }
+  .intro-sound-row input[type="range"],
+  .tt-global-sound-row input[type="range"] {
+    grid-column: 1 / -1;
+  }
 }
 
 /* ─── Landscape mobile: PC-like 16:9 layout ─── */
@@ -3272,12 +3367,12 @@ function render(){
     }
     var ttSoundState = { activeClueId: null, revealPlayedForClue: null, dailyDoublePlayedForClue: null };
     var ttAudioCache = {};
-    var ttVolumeStorageKey = 'transfer-trivia-volume-v1';
+    var ttVolumeStorageKey = 'transfer-trivia-volume-v2';
     var ttVolumeDefaults = {
-        introMusic: 0.34,
-        wrong: 1,
-        dailyDouble: 1,
-        correct: 1
+        introMusic: 1,
+        wrong: 0.5,
+        dailyDouble: 0.5,
+        correct: 0.7
     };
     var ttVolumeLevels = loadVolumeLevels();
     var introMusic = null;
@@ -3536,11 +3631,11 @@ function render(){
             + '<div class="tt-global-sound-backdrop" id="tt-global-sound-backdrop" aria-hidden="true"></div>'
             + '<div class="tt-global-sound-panel" role="dialog" aria-modal="true" aria-label="Sound controls">'
             + '  <div class="tt-global-sound-head"><div class="tt-global-sound-title">Sound Controls</div><button type="button" class="tt-global-sound-close" id="tt-global-sound-close" aria-label="Close sound controls">×</button></div>'
-            + '  <div class="tt-global-sound-row"><label for="global-vol-introMusic">Intro Music</label><input id="global-vol-introMusic" data-sound-kind="introMusic" type="range" min="0" max="100" step="1" value="34"><button type="button" class="global-sound-preview-btn" id="global-sound-mute-btn" aria-pressed="false">Mute</button><span class="tt-global-sound-value" id="global-vol-introMusic-value">34%</span></div>'
-            + '  <div class="tt-global-sound-row"><label for="global-vol-wrong">Buzzer</label><input id="global-vol-wrong" data-sound-kind="wrong" type="range" min="0" max="100" step="1" value="100"><button type="button" class="global-sound-preview-btn" data-preview-kind="wrong" aria-pressed="false">Preview</button><span class="tt-global-sound-value" id="global-vol-wrong-value">100%</span></div>'
-            + '  <div class="tt-global-sound-row"><label for="global-vol-dailyDouble">Daily Double</label><input id="global-vol-dailyDouble" data-sound-kind="dailyDouble" type="range" min="0" max="100" step="1" value="100"><button type="button" class="global-sound-preview-btn" data-preview-kind="dailyDouble" aria-pressed="false">Preview</button><span class="tt-global-sound-value" id="global-vol-dailyDouble-value">100%</span></div>'
-            + '  <div class="tt-global-sound-row"><label for="global-vol-correct">Correct</label><input id="global-vol-correct" data-sound-kind="correct" type="range" min="0" max="100" step="1" value="100"><button type="button" class="global-sound-preview-btn" data-preview-kind="correct" aria-pressed="false">Preview</button><span class="tt-global-sound-value" id="global-vol-correct-value">100%</span></div>'
-            + '  <div class="tt-global-sound-note">Tip: Press V at any time to open or close sound controls.</div>'
+            + '  <div class="tt-global-sound-row"><label for="global-vol-introMusic">Intro Music</label><input id="global-vol-introMusic" data-sound-kind="introMusic" type="range" min="0" max="100" step="1" value="100"><button type="button" class="global-sound-preview-btn" id="global-sound-mute-btn" aria-pressed="false">Mute</button><span class="tt-global-sound-value" id="global-vol-introMusic-value">100%</span></div>'
+            + '  <div class="tt-global-sound-row"><label for="global-vol-wrong">Buzzer</label><input id="global-vol-wrong" data-sound-kind="wrong" type="range" min="0" max="100" step="1" value="50"><button type="button" class="global-sound-preview-btn" data-preview-kind="wrong" aria-pressed="false">Preview</button><span class="tt-global-sound-value" id="global-vol-wrong-value">50%</span></div>'
+            + '  <div class="tt-global-sound-row"><label for="global-vol-dailyDouble">Daily Double</label><input id="global-vol-dailyDouble" data-sound-kind="dailyDouble" type="range" min="0" max="100" step="1" value="50"><button type="button" class="global-sound-preview-btn" data-preview-kind="dailyDouble" aria-pressed="false">Preview</button><span class="tt-global-sound-value" id="global-vol-dailyDouble-value">50%</span></div>'
+            + '  <div class="tt-global-sound-row"><label for="global-vol-correct">Correct</label><input id="global-vol-correct" data-sound-kind="correct" type="range" min="0" max="100" step="1" value="70"><button type="button" class="global-sound-preview-btn" data-preview-kind="correct" aria-pressed="false">Preview</button><span class="tt-global-sound-value" id="global-vol-correct-value">70%</span></div>'
+            + '  <div class="tt-global-sound-note">Tip: Press <kbd>V</kbd> at any time to open or close sound levels.</div>'
             + '</div>';
         document.body.appendChild(layer);
 
@@ -3617,7 +3712,7 @@ function render(){
             + '  <div class="tt-global-player-head"><div class="tt-global-player-title">Players</div><button type="button" class="tt-global-player-close" id="tt-global-player-close" aria-label="Close player names">×</button></div>'
             + '  <div class="tt-global-player-grid">' + rows + '</div>'
             + '  <div class="tt-global-player-actions"><button type="button" class="tt-global-player-cancel-btn" id="tt-global-player-cancel-btn">Cancel</button><button type="button" class="tt-global-player-save-btn" id="tt-global-player-save-btn">Save Names</button></div>'
-            + '  <div class="tt-global-player-note">Tip: Press P at any time to open or close player names.</div>'
+            + '  <div class="tt-global-player-note">Tip: Press <kbd>P</kbd> at any time to open or close the player list.</div>'
             + '</div>';
         document.body.appendChild(layer);
 
@@ -4459,12 +4554,14 @@ var waves = [shuffleArray(even.slice()), shuffleArray(odd.slice())];        var 
             + '      <button type="button" class="intro-btn" id="intro-sound-panel-toggle-btn" aria-expanded="false" aria-controls="intro-sound-panel">Sound Levels</button>'
             + '      <button type="button" class="intro-btn" id="intro-player-panel-toggle-btn" aria-expanded="false" aria-controls="intro-player-panel">Players</button>'
             + '    </div>'
+            + '    <div class="intro-note">Shortcuts: <kbd>V</kbd> opens sound levels and <kbd>P</kbd> opens the player list.</div>'
             + '    <div class="intro-sound-panel" id="intro-sound-panel" aria-hidden="true">'
             + '      <div class="intro-sound-panel-top"><div class="intro-sound-panel-title">Sound Levels</div></div>'
-            + '      <div class="intro-sound-row"><label for="intro-vol-introMusic">Intro Music</label><input id="intro-vol-introMusic" data-sound-kind="introMusic" type="range" min="0" max="100" step="1" value="34"><button type="button" class="intro-sound-mute-btn" id="intro-sound-mute-btn" aria-pressed="false">Mute</button><span class="intro-sound-value" id="intro-vol-introMusic-value">34%</span></div>'
-            + '      <div class="intro-sound-row"><label for="intro-vol-wrong">Buzzer</label><input id="intro-vol-wrong" data-sound-kind="wrong" type="range" min="0" max="100" step="1" value="100"><button type="button" class="intro-sound-preview-btn" data-preview-kind="wrong" aria-pressed="false">Preview</button><span class="intro-sound-value" id="intro-vol-wrong-value">100%</span></div>'
-            + '      <div class="intro-sound-row"><label for="intro-vol-dailyDouble">Daily Double</label><input id="intro-vol-dailyDouble" data-sound-kind="dailyDouble" type="range" min="0" max="100" step="1" value="100"><button type="button" class="intro-sound-preview-btn" data-preview-kind="dailyDouble" aria-pressed="false">Preview</button><span class="intro-sound-value" id="intro-vol-dailyDouble-value">100%</span></div>'
-            + '      <div class="intro-sound-row"><label for="intro-vol-correct">Correct</label><input id="intro-vol-correct" data-sound-kind="correct" type="range" min="0" max="100" step="1" value="100"><button type="button" class="intro-sound-preview-btn" data-preview-kind="correct" aria-pressed="false">Preview</button><span class="intro-sound-value" id="intro-vol-correct-value">100%</span></div>'
+            + '      <div class="intro-sound-row"><label for="intro-vol-introMusic">Intro Music</label><input id="intro-vol-introMusic" data-sound-kind="introMusic" type="range" min="0" max="100" step="1" value="100"><button type="button" class="intro-sound-mute-btn" id="intro-sound-mute-btn" aria-pressed="false">Mute</button><span class="intro-sound-value" id="intro-vol-introMusic-value">100%</span></div>'
+            + '      <div class="intro-sound-row"><label for="intro-vol-wrong">Buzzer</label><input id="intro-vol-wrong" data-sound-kind="wrong" type="range" min="0" max="100" step="1" value="50"><button type="button" class="intro-sound-preview-btn" data-preview-kind="wrong" aria-pressed="false">Preview</button><span class="intro-sound-value" id="intro-vol-wrong-value">50%</span></div>'
+            + '      <div class="intro-sound-row"><label for="intro-vol-dailyDouble">Daily Double</label><input id="intro-vol-dailyDouble" data-sound-kind="dailyDouble" type="range" min="0" max="100" step="1" value="50"><button type="button" class="intro-sound-preview-btn" data-preview-kind="dailyDouble" aria-pressed="false">Preview</button><span class="intro-sound-value" id="intro-vol-dailyDouble-value">50%</span></div>'
+            + '      <div class="intro-sound-row"><label for="intro-vol-correct">Correct</label><input id="intro-vol-correct" data-sound-kind="correct" type="range" min="0" max="100" step="1" value="70"><button type="button" class="intro-sound-preview-btn" data-preview-kind="correct" aria-pressed="false">Preview</button><span class="intro-sound-value" id="intro-vol-correct-value">70%</span></div>'
+            + '      <div class="intro-sound-note">Press <kbd>V</kbd> to reopen sound levels after the intro.</div>'
             + '    </div>'
             + '    <div class="intro-player-panel" id="intro-player-panel" aria-hidden="true">'
             + '      <div class="intro-player-panel-title">Players</div>'
@@ -4482,6 +4579,7 @@ var waves = [shuffleArray(even.slice()), shuffleArray(odd.slice())];        var 
             + '        <button type="button" class="intro-player-cancel-btn" id="intro-player-cancel-btn">Cancel</button>'
             + '        <button type="button" class="intro-player-save-btn" id="intro-player-save-btn">Save Names</button>'
             + '      </div>'
+            + '      <div class="tt-global-player-note">Press <kbd>P</kbd> to reopen the player list after the intro.</div>'
             + '    </div>'
             + '  </div>'
             + '</div>'
