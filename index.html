@@ -3191,7 +3191,9 @@ if (CLEAN_MODE) {
                         clueHintFactor = Number(window.getCurrentClueHintFactor()) || 1;
                     }
                 } catch (err2) {}
-                val = val * clueMultiplier * clueHintFactor;
+                val = (typeof window.normalizeEffectivePoints === "function")
+                    ? window.normalizeEffectivePoints(val * clueMultiplier * clueHintFactor)
+                    : Math.round(val * clueMultiplier * clueHintFactor);
                 if(this.classList.contains("minus")){
                     val = -val;
                 }
@@ -3666,6 +3668,12 @@ if (CLEAN_MODE) {
         } catch (e) {}
     }
 
+    function normalizeEffectivePoints(value){
+        var numeric = Number(value);
+        if(!isFinite(numeric) || numeric <= 0){ return 0; }
+        return Math.round(numeric);
+    }
+
     function getCurrentCluePoints(){
         var basePoints = 0;
         var activeQuestion = document.querySelector(".active-question .cell-inner");
@@ -3683,7 +3691,7 @@ if (CLEAN_MODE) {
         if(!basePoints || isNaN(basePoints)){ return 0; }
         var multiplier = Number(getCurrentCluePointMultiplier && getCurrentCluePointMultiplier()) || 1;
         var hintFactor = Number(getCurrentClueHintFactor && getCurrentClueHintFactor()) || 1;
-        return Math.round(basePoints * multiplier * hintFactor);
+        return normalizeEffectivePoints(basePoints * multiplier * hintFactor);
     }
 
     function getCurrentClueId(){
@@ -3845,7 +3853,7 @@ if (CLEAN_MODE) {
             if(!isNaN(points) && points > 0){
                 var multiplier = Number(getCluePointMultiplier(getClueEntry(cell))) || 1;
                 var hintFactor = Number(getClueHintFactor(cell.id)) || 1;
-                total += Math.round(points * multiplier * hintFactor);
+                total += normalizeEffectivePoints(points * multiplier * hintFactor);
             }
         });
         return total;
@@ -6134,6 +6142,7 @@ function render(){
     window.showIntroScreen = showIntroScreen;
     window.resetGame = resetGame;
     window.toggleFullscreen = toggleFullscreen;
+    window.normalizeEffectivePoints = normalizeEffectivePoints;
     window.getClueHintFactor = getClueHintFactor;
     window.getCurrentClueHintFactor = getCurrentClueHintFactor;
 
