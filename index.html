@@ -123,6 +123,36 @@ kbd {
   max-width: 100%;
   padding-right: calc(14px + var(--tt-control-lane-reserve));
 }
+#gameplay.tt-bg-letter-pulse .cell-inner {
+  color: rgba(255,255,255,.6) !important;
+  text-shadow: none;
+  filter: brightness(.92);
+  opacity: .78;
+}
+#gameplay.tt-bg-letter-pulse .grid-row:nth-child(odd) .grid-cell:nth-child(odd) .cell-inner,
+#gameplay.tt-bg-letter-pulse .grid-row:nth-child(even) .grid-cell:nth-child(even) .cell-inner {
+  animation: tt-bg-letter-pulse 8s linear infinite;
+  animation-delay: 0s;
+}
+#gameplay.tt-bg-letter-pulse .grid-row:nth-child(odd) .grid-cell:nth-child(even) .cell-inner,
+#gameplay.tt-bg-letter-pulse .grid-row:nth-child(even) .grid-cell:nth-child(odd) .cell-inner {
+  animation: tt-bg-letter-pulse 8s linear infinite;
+  animation-delay: -4s;
+}
+@keyframes tt-bg-letter-pulse {
+  0%, 20%, 100% {
+    color: rgba(255,255,255,.6);
+    text-shadow: none;
+    filter: brightness(.92);
+    opacity: .78;
+  }
+  45%, 55% {
+    color: #fff;
+    text-shadow: 0 0 14px rgba(255,255,255,.98), 0 0 34px rgba(255,255,255,.62);
+    filter: brightness(2.5);
+    opacity: 1;
+  }
+}
 
 /* Teams / scoreboard bar — fixed to bottom, never scrolls */
 #teams {
@@ -1263,6 +1293,7 @@ body.tt-drawing-active #tt-meter-stage * { pointer-events: auto; }
   font-size: 12px;
   line-height: 1.35;
   color: rgba(255,255,255,.7);
+  text-align: center;
 }
 
 /* Intro player panel */
@@ -1294,21 +1325,43 @@ body.tt-drawing-active #tt-meter-stage * { pointer-events: auto; }
   border: 1px solid rgba(255,255,255,.28); background: rgba(255,255,255,.1);
   color: #fff; border-radius: 10px; padding: 7px 12px; font-size: 12px; font-weight: 700; cursor: pointer;
 }
-.tt-global-player-note { margin-top: 10px; font-size: 12px; line-height: 1.35; color: rgba(255,255,255,.7); }
+.intro-player-note, .tt-global-player-note { margin-top: 10px; font-size: 12px; line-height: 1.35; color: rgba(255,255,255,.7); text-align: center; }
 
 /* Palm decorations */
 .intro-palms { position: fixed; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
 .intro-palm {
   position: fixed; bottom: -2vh; width: auto;
-  height: min(82vh, 900px); max-width: 46vw;
+  height: min(96vh, 1050px); max-width: 52vw;
   object-fit: contain; object-position: bottom center; opacity: 0;
   filter: drop-shadow(0 18px 26px rgba(0,0,0,.42));
   transition: transform 1.8s cubic-bezier(.16,.84,.24,1), opacity 1.8s ease-out;
+  will-change: transform, filter;
 }
 .intro-palm.left  { left: -4vw; transform: translateX(-18vw); }
 .intro-palm.right { right: -4vw; transform: translateX(18vw); }
 #intro-overlay.logo-visible .intro-palm { opacity: .78; }
-#intro-overlay.logo-visible .intro-palm.left, #intro-overlay.logo-visible .intro-palm.right { transform: translateX(0); }
+#intro-overlay.logo-visible .intro-palm.left {
+  transform: translateX(0);
+  animation: palmSwayLeft 8.5s ease-in-out 0.4s infinite, palmShadePulse 6s ease-in-out 0.4s infinite;
+}
+#intro-overlay.logo-visible .intro-palm.right {
+  transform: translateX(0);
+  animation: palmSwayRight 9.2s ease-in-out 0.9s infinite, palmShadePulse 6.4s ease-in-out 0.9s infinite;
+}
+@keyframes palmSwayLeft {
+  0%, 100% { transform: translateX(0) rotate(0deg) scale(1); }
+  30% { transform: translateX(0) rotate(-1deg) scale(1.01); }
+  65% { transform: translateX(0) rotate(0.7deg) scale(1.005); }
+}
+@keyframes palmSwayRight {
+  0%, 100% { transform: translateX(0) rotate(0deg) scale(1); }
+  30% { transform: translateX(0) rotate(1deg) scale(1.01); }
+  65% { transform: translateX(0) rotate(-0.7deg) scale(1.005); }
+}
+@keyframes palmShadePulse {
+  0%, 100% { filter: drop-shadow(0 18px 26px rgba(0,0,0,.42)); }
+  50% { filter: drop-shadow(0 22px 32px rgba(0,0,0,.48)); }
+}
 
 /* Vice title / logo */
 @font-face {
@@ -1317,16 +1370,17 @@ body.tt-drawing-active #tt-meter-stage * { pointer-events: auto; }
   font-display: swap;
 }
 .vice-title {
+  --vice-scale: 1.35;
   position: fixed; left: 42px; bottom: 64px; top: auto; z-index: 14001;
-  display: flex; flex-direction: column; align-items: flex-start; width: min(44vw, 770px);
+  display: flex; flex-direction: column; align-items: flex-start; width: min(67.4475vw, 1172px);
   pointer-events: none; user-select: none;
-  transform: translateY(14px) rotate(-2deg); transform-origin: bottom left;
+  transform: translateY(14px) rotate(-2deg) scale(var(--vice-scale)); transform-origin: bottom left;
   filter: drop-shadow(0 16px 28px rgba(0,0,0,.56)) drop-shadow(0 0 4px rgba(255,255,255,.45)) drop-shadow(0 0 10px rgba(255,109,198,.22));
   opacity: 0; overflow: visible;
   transition: opacity 1.8s ease-out, transform 1.8s cubic-bezier(.16,.84,.24,1);
 }
 #intro-overlay.logo-visible .vice-title {
-  opacity: .998; transform: translateY(0) rotate(-2deg);
+  opacity: .998; transform: translateY(0) rotate(-2deg) scale(var(--vice-scale));
   animation: viceGlowIntro 1.05s ease-out 1, viceGlowIdle 3.2s ease-in-out 1.05s infinite;
 }
 .vice-title-top {
@@ -1386,10 +1440,10 @@ body.tt-drawing-active #tt-meter-stage * { pointer-events: auto; }
   .intro-copy { font-size: 16px; }
   .intro-player-grid { grid-template-columns: 1fr; }
   .load-btn { min-width: 160px; font-size: 19px; padding: 14px 22px; }
-  .vice-title { top: 34px; left: 8px; width: min(50vw, 360px); }
+  .vice-title { top: 34px; left: 8px; width: min(76.04375vw, 547px); }
   .vice-title-top { margin-left: 0; font-size: clamp(46px, 9vw, 76px); }
   .vice-title-bottom { font-size: clamp(78px, 18vw, 120px); margin-left: 6px; }
-  .intro-palm { height: min(74vh, 760px); max-width: 54vw; }
+  .intro-palm { height: min(88vh, 880px); max-width: 58vw; }
 }
 @media (max-height: 750px) {
   .intro-card { padding: 16px 18px 14px; border-radius: 18px; }
@@ -1465,7 +1519,7 @@ body.tt-drawing-active #tt-meter-stage * { pointer-events: auto; }
   .load-btn { min-width: 120px; font-size: 15px; padding: 8px 14px; }
 
   /* Vice-title: fills the left margin clearly */
-  .vice-title { left: 10px; bottom: 10px; width: min(20vw, 112px); }
+  .vice-title { left: 10px; bottom: 10px; width: min(30.4175vw, 170px); }
   .vice-title-top { font-size: clamp(22px, 3.5vh, 36px); }
   .vice-title-bottom { font-size: clamp(34px, 5.5vh, 56px); margin-top: -7px; }
 
@@ -2962,7 +3016,7 @@ if (CLEAN_MODE) {
             if(then){
                 then();
             }
-        }, 500);
+        }, 1000);
     }
 
     modal.show = function(cell, no_push_state){
@@ -3367,12 +3421,12 @@ function render(){
     }
     var ttSoundState = { activeClueId: null, revealPlayedForClue: null, dailyDoublePlayedForClue: null };
     var ttAudioCache = {};
-    var ttVolumeStorageKey = 'transfer-trivia-volume-v2';
+    var ttVolumeStorageKey = 'transfer-trivia-volume-v3';
     var ttVolumeDefaults = {
         introMusic: 1,
-        wrong: 0.5,
+        wrong: 0.42,
         dailyDouble: 0.5,
-        correct: 0.7
+        correct: 1
     };
     var ttVolumeLevels = loadVolumeLevels();
     var introMusic = null;
@@ -3632,10 +3686,10 @@ function render(){
             + '<div class="tt-global-sound-panel" role="dialog" aria-modal="true" aria-label="Sound controls">'
             + '  <div class="tt-global-sound-head"><div class="tt-global-sound-title">Sound Controls</div><button type="button" class="tt-global-sound-close" id="tt-global-sound-close" aria-label="Close sound controls">×</button></div>'
             + '  <div class="tt-global-sound-row"><label for="global-vol-introMusic">Intro Music</label><input id="global-vol-introMusic" data-sound-kind="introMusic" type="range" min="0" max="100" step="1" value="100"><button type="button" class="global-sound-preview-btn" id="global-sound-mute-btn" aria-pressed="false">Mute</button><span class="tt-global-sound-value" id="global-vol-introMusic-value">100%</span></div>'
-            + '  <div class="tt-global-sound-row"><label for="global-vol-wrong">Buzzer</label><input id="global-vol-wrong" data-sound-kind="wrong" type="range" min="0" max="100" step="1" value="50"><button type="button" class="global-sound-preview-btn" data-preview-kind="wrong" aria-pressed="false">Preview</button><span class="tt-global-sound-value" id="global-vol-wrong-value">50%</span></div>'
+            + '  <div class="tt-global-sound-row"><label for="global-vol-wrong">Buzzer</label><input id="global-vol-wrong" data-sound-kind="wrong" type="range" min="0" max="100" step="1" value="42"><button type="button" class="global-sound-preview-btn" data-preview-kind="wrong" aria-pressed="false">Preview</button><span class="tt-global-sound-value" id="global-vol-wrong-value">42%</span></div>'
             + '  <div class="tt-global-sound-row"><label for="global-vol-dailyDouble">Daily Double</label><input id="global-vol-dailyDouble" data-sound-kind="dailyDouble" type="range" min="0" max="100" step="1" value="50"><button type="button" class="global-sound-preview-btn" data-preview-kind="dailyDouble" aria-pressed="false">Preview</button><span class="tt-global-sound-value" id="global-vol-dailyDouble-value">50%</span></div>'
-            + '  <div class="tt-global-sound-row"><label for="global-vol-correct">Correct</label><input id="global-vol-correct" data-sound-kind="correct" type="range" min="0" max="100" step="1" value="70"><button type="button" class="global-sound-preview-btn" data-preview-kind="correct" aria-pressed="false">Preview</button><span class="tt-global-sound-value" id="global-vol-correct-value">70%</span></div>'
-            + '  <div class="tt-global-sound-note">Tip: Press <kbd>V</kbd> at any time to open or close sound levels.</div>'
+            + '  <div class="tt-global-sound-row"><label for="global-vol-correct">Correct</label><input id="global-vol-correct" data-sound-kind="correct" type="range" min="0" max="100" step="1" value="100"><button type="button" class="global-sound-preview-btn" data-preview-kind="correct" aria-pressed="false">Preview</button><span class="tt-global-sound-value" id="global-vol-correct-value">100%</span></div>'
+            + '  <div class="tt-global-sound-note">Shortcut: <kbd>V</kbd> is always available to open or close sound controls.</div>'
             + '</div>';
         document.body.appendChild(layer);
 
@@ -3712,7 +3766,7 @@ function render(){
             + '  <div class="tt-global-player-head"><div class="tt-global-player-title">Players</div><button type="button" class="tt-global-player-close" id="tt-global-player-close" aria-label="Close player names">×</button></div>'
             + '  <div class="tt-global-player-grid">' + rows + '</div>'
             + '  <div class="tt-global-player-actions"><button type="button" class="tt-global-player-cancel-btn" id="tt-global-player-cancel-btn">Cancel</button><button type="button" class="tt-global-player-save-btn" id="tt-global-player-save-btn">Save Names</button></div>'
-            + '  <div class="tt-global-player-note">Tip: Press <kbd>P</kbd> at any time to open or close the player list.</div>'
+            + '  <div class="tt-global-player-note">Shortcut: <kbd>P</kbd> is always available to open or close the player list.</div>'
             + '</div>';
         document.body.appendChild(layer);
 
@@ -3929,6 +3983,19 @@ function render(){
         }
     }
 
+    function startBackgroundLetterPulse(){
+        var gameplay = document.getElementById('gameplay');
+        var intro = document.getElementById('intro-overlay');
+        if(!gameplay || !intro || intro.classList.contains('hidden')){ return; }
+        gameplay.classList.add('tt-bg-letter-pulse');
+    }
+
+    function stopBackgroundLetterPulse(){
+        var gameplay = document.getElementById('gameplay');
+        if(!gameplay){ return; }
+        gameplay.classList.remove('tt-bg-letter-pulse');
+    }
+
     function updateIntroMusicButton(){
         ['intro-sound-mute-btn', 'global-sound-mute-btn'].forEach(function(id){
             var btn = document.getElementById(id);
@@ -4023,6 +4090,7 @@ function render(){
         if(intro){
             intro.classList.remove('sequence-started', 'card-visible', 'logo-visible', 'start-ready');
         }
+        stopBackgroundLetterPulse();
         stopIntroMusic();
     }
 
@@ -4032,6 +4100,7 @@ function render(){
         if(!intro || introSequenceStarted){ return; }
         introSequenceStarted = true;
         intro.classList.add('sequence-started');
+        startBackgroundLetterPulse();
         if(music){
             try { music.currentTime = 0; } catch (e) {}
         }
@@ -4051,9 +4120,12 @@ function render(){
     function restartIntroLogoAnimation(){
         var intro = document.getElementById('intro-overlay');
         if(!intro || !intro.classList.contains('logo-visible')){ return; }
-        intro.classList.remove('logo-visible');
-        void intro.offsetWidth;
-        intro.classList.add('logo-visible');
+        var title = intro.querySelector('.vice-title');
+        if(!title){ return; }
+        // Replay only the logo glow animation without touching intro state classes.
+        title.style.animation = 'none';
+        void title.offsetWidth;
+        title.style.animation = 'viceGlowIntro 1.05s ease-out 1, viceGlowIdle 3.2s ease-in-out 1.05s infinite';
     }
 
     function getActiveClueId(){
@@ -4554,14 +4626,13 @@ var waves = [shuffleArray(even.slice()), shuffleArray(odd.slice())];        var 
             + '      <button type="button" class="intro-btn" id="intro-sound-panel-toggle-btn" aria-expanded="false" aria-controls="intro-sound-panel">Sound Levels</button>'
             + '      <button type="button" class="intro-btn" id="intro-player-panel-toggle-btn" aria-expanded="false" aria-controls="intro-player-panel">Players</button>'
             + '    </div>'
-            + '    <div class="intro-note">Shortcuts: <kbd>V</kbd> opens sound levels and <kbd>P</kbd> opens the player list.</div>'
             + '    <div class="intro-sound-panel" id="intro-sound-panel" aria-hidden="true">'
             + '      <div class="intro-sound-panel-top"><div class="intro-sound-panel-title">Sound Levels</div></div>'
             + '      <div class="intro-sound-row"><label for="intro-vol-introMusic">Intro Music</label><input id="intro-vol-introMusic" data-sound-kind="introMusic" type="range" min="0" max="100" step="1" value="100"><button type="button" class="intro-sound-mute-btn" id="intro-sound-mute-btn" aria-pressed="false">Mute</button><span class="intro-sound-value" id="intro-vol-introMusic-value">100%</span></div>'
-            + '      <div class="intro-sound-row"><label for="intro-vol-wrong">Buzzer</label><input id="intro-vol-wrong" data-sound-kind="wrong" type="range" min="0" max="100" step="1" value="50"><button type="button" class="intro-sound-preview-btn" data-preview-kind="wrong" aria-pressed="false">Preview</button><span class="intro-sound-value" id="intro-vol-wrong-value">50%</span></div>'
+            + '      <div class="intro-sound-row"><label for="intro-vol-wrong">Buzzer</label><input id="intro-vol-wrong" data-sound-kind="wrong" type="range" min="0" max="100" step="1" value="42"><button type="button" class="intro-sound-preview-btn" data-preview-kind="wrong" aria-pressed="false">Preview</button><span class="intro-sound-value" id="intro-vol-wrong-value">42%</span></div>'
             + '      <div class="intro-sound-row"><label for="intro-vol-dailyDouble">Daily Double</label><input id="intro-vol-dailyDouble" data-sound-kind="dailyDouble" type="range" min="0" max="100" step="1" value="50"><button type="button" class="intro-sound-preview-btn" data-preview-kind="dailyDouble" aria-pressed="false">Preview</button><span class="intro-sound-value" id="intro-vol-dailyDouble-value">50%</span></div>'
-            + '      <div class="intro-sound-row"><label for="intro-vol-correct">Correct</label><input id="intro-vol-correct" data-sound-kind="correct" type="range" min="0" max="100" step="1" value="70"><button type="button" class="intro-sound-preview-btn" data-preview-kind="correct" aria-pressed="false">Preview</button><span class="intro-sound-value" id="intro-vol-correct-value">70%</span></div>'
-            + '      <div class="intro-sound-note">Press <kbd>V</kbd> to reopen sound levels after the intro.</div>'
+            + '      <div class="intro-sound-row"><label for="intro-vol-correct">Correct</label><input id="intro-vol-correct" data-sound-kind="correct" type="range" min="0" max="100" step="1" value="100"><button type="button" class="intro-sound-preview-btn" data-preview-kind="correct" aria-pressed="false">Preview</button><span class="intro-sound-value" id="intro-vol-correct-value">100%</span></div>'
+            + '      <div class="intro-sound-note">Shortcut: <kbd>V</kbd> is always available to open or close sound controls.</div>'
             + '    </div>'
             + '    <div class="intro-player-panel" id="intro-player-panel" aria-hidden="true">'
             + '      <div class="intro-player-panel-title">Players</div>'
@@ -4579,7 +4650,7 @@ var waves = [shuffleArray(even.slice()), shuffleArray(odd.slice())];        var 
             + '        <button type="button" class="intro-player-cancel-btn" id="intro-player-cancel-btn">Cancel</button>'
             + '        <button type="button" class="intro-player-save-btn" id="intro-player-save-btn">Save Names</button>'
             + '      </div>'
-            + '      <div class="tt-global-player-note">Press <kbd>P</kbd> to reopen the player list after the intro.</div>'
+            + '      <div class="intro-player-note">Shortcut: <kbd>P</kbd> is always available to open or close the player list.</div>'
             + '    </div>'
             + '  </div>'
             + '</div>'
@@ -4599,6 +4670,7 @@ var waves = [shuffleArray(even.slice()), shuffleArray(odd.slice())];        var 
         document.getElementById("start-game-btn").addEventListener("click", function(){
             ensureAudio();
             stopIntroMusic();
+            stopBackgroundLetterPulse();
             setIntroSoundPanelOpen(false);
             setIntroPlayerPanelOpen(false);
             closeGlobalSoundPanel();
@@ -4662,6 +4734,7 @@ var waves = [shuffleArray(even.slice()), shuffleArray(odd.slice())];        var 
         }
         if(state.introSeen){
             intro.classList.add("hidden");
+            stopBackgroundLetterPulse();
         } else {
             intro.classList.remove("hidden");
             resetIntroSequence();
