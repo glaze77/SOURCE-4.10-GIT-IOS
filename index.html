@@ -746,6 +746,7 @@ kbd {
 .tt-answer-content {
   display: flex; flex-direction: column; gap: 10px;
   height: 100%; padding: 18px 20px 22px; overflow: hidden;
+  position: relative; isolation: isolate;
   transition: opacity .16s ease, transform .16s ease;
 }
 .tt-answer-label { display: none; }
@@ -1137,12 +1138,46 @@ kbd {
   28%  { opacity: .55; }
   100% { opacity: .05; }
 }
+@keyframes ttAnswerBoxBurstPulse {
+  0% {
+    opacity: 0;
+    transform: scale(0.90);
+    filter: blur(10px);
+  }
+  18% {
+    opacity: 1;
+    transform: scale(1.04);
+    filter: blur(5px);
+  }
+  60% {
+    opacity: .52;
+    transform: scale(1.07);
+    filter: blur(7px);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.12);
+    filter: blur(12px);
+  }
+}
 .grid-cell.tt-fire-answer-flash {
   animation: ttFireAnswerFlash 1.5s ease-out both !important;
   z-index: 2;
 }
 .grid-cell.tt-fire-answer-flash .cell-inner {
   animation: ttFireAnswerFlashInner 1.5s ease-out both !important;
+}
+.tt-answer-content.tt-streak-burst::before {
+  content: "";
+  position: absolute;
+  inset: -14px;
+  border-radius: 24px;
+  pointer-events: none;
+  z-index: -1;
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(255,248,180,.96) 0%, rgba(255,196,74,.72) 26%, rgba(255,110,0,.42) 48%, rgba(255,70,0,.18) 65%, rgba(255,70,0,0) 78%),
+    radial-gradient(ellipse at 50% 70%, rgba(255,126,0,.52) 0%, rgba(255,65,0,.18) 48%, rgba(255,65,0,0) 76%);
+  animation: ttAnswerBoxBurstPulse .92s cubic-bezier(.2,.72,.24,1) both;
 }
 /* ─────────────────────────────────────────────────────────────────── */
 
@@ -5617,6 +5652,14 @@ function render(){
         setTimeout(function(){ cell.classList.remove('tt-fire-answer-flash'); }, 1500);
     }
 
+    function ttAnswerBurstFlash(el){
+        if(!el){ return; }
+        el.classList.remove('tt-streak-burst');
+        void el.offsetWidth;
+        el.classList.add('tt-streak-burst');
+        setTimeout(function(){ el.classList.remove('tt-streak-burst'); }, 950);
+    }
+
     /* Temporary fire burst on a gameboard answer cell (replicates player fire) */
     var ttCellFires = []; /* [{ el, particles[], tick, maxTick, smokeTick, mode }] */
 
@@ -5946,6 +5989,9 @@ function render(){
             /* Frame fire around the visible answer content block in the modal */
             var answerBlock = document.querySelector('#question-modal .tt-answer-content');
             ttFireCellElement(answerBlock || answeredCell);
+            if(state.streakCount >= 4){
+                ttAnswerBurstFlash(answerBlock);
+            }
         }
         checkAndTriggerFinale();
     }
