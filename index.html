@@ -3099,7 +3099,7 @@ if (CLEAN_MODE) {
                     val = -val;
                 }
                 $points.innerText = points + val;
-                if(active_question){
+                if(active_question && val > 0){
                     document.querySelectorAll(".active-question")[0].classList.add("inert");
                     document.querySelectorAll(".active-question")[0].setAttribute("aria-label", "Answered");
                 }
@@ -5650,7 +5650,7 @@ function render(){
 
         var activeQuestion = document.querySelector(".active-question");
         var answeredCell = activeQuestion; /* save ref before inert/render */
-        if(activeQuestion){
+        if(activeQuestion && delta > 0){
             activeQuestion.classList.add("inert");
             activeQuestion.setAttribute("aria-label", "Answered");
             try {
