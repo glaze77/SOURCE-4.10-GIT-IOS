@@ -2181,7 +2181,7 @@ body::before {
 
 @media (max-width: 720px) {
     :root {
-        --app-bottom-bar-h: 208px;
+        --app-bottom-bar-h: 152px;
     }
 
     body::before {
@@ -2203,17 +2203,60 @@ body::before {
     }
 
     .scoreboard-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 7px;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 6px;
     }
 
     .score-entry {
-        padding: 8px;
-        gap: 7px;
+        grid-template-columns: 28px minmax(0,1fr) 28px;
+        row-gap: 5px;
+        column-gap: 5px;
+        padding: 6px 5px 5px;
+        border-radius: 10px;
     }
 
     .score-value {
-        font-size: 22px;
+        font-size: 18px;
+        min-height: 18px;
+    }
+
+    .score-undo,
+    .score-add-wrap,
+    .score-add-btn {
+        width: 28px;
+        height: 28px;
+    }
+
+    .score-undo,
+    .score-add-btn {
+        border-radius: 8px;
+        font-size: 14px;
+    }
+
+    .score-name {
+        padding: 5px 6px;
+        font-size: 10px;
+        border-radius: 8px;
+    }
+
+    .grid {
+        padding: 8px !important;
+        gap: 6px;
+    }
+
+    .grid-row {
+        gap: 6px;
+    }
+
+    .grid-row-cats .cell-inner {
+        font-size: clamp(12px, 3vw, 16px) !important;
+        line-height: 1.08;
+        padding: 8px 6px;
+        letter-spacing: .03em;
+    }
+
+    .grid-row-questions .cell-inner {
+        font-size: clamp(20px, 5.4vw, 28px) !important;
     }
 }
 </style>
@@ -2596,6 +2639,9 @@ body::before {
     line-height: 1.55;
     color: rgba(255,255,255,.92);
     flex: 1 1 auto;
+}
+.intro-card h1:empty {
+    display: none;
 }
 .intro-copy ul {
     margin: 0;
@@ -3306,19 +3352,23 @@ body::before {
     .intro-card {
         padding: 18px 16px 16px;
         border-radius: 22px;
+        overflow: visible;
     }
     .intro-palm { height: min(74%, 760px); max-width: 54%; }
     .intro-card h1 { font-size: 34px; }
-    .intro-copy { font-size: 16px; }
+    .intro-copy {
+        font-size: 16px;
+        flex: 0 0 auto;
+        margin-bottom: 0;
+    }
     .intro-copy-media.hand img { max-width: min(100%, 220px); }
     .intro-actions {
-        position: sticky;
-        bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+        position: static;
         width: 100%;
         margin-top: 18px;
-        padding-top: 12px;
-        padding-bottom: 4px;
-        background: linear-gradient(180deg, rgba(9,16,60,0), rgba(9,16,60,.92) 26%, rgba(9,16,60,.98));
+        padding-top: 0;
+        padding-bottom: 0;
+        background: none;
     }
     .intro-btn,
     .intro-btn.primary,
@@ -3326,6 +3376,35 @@ body::before {
     #intro-player-panel-toggle-btn {
         width: 100%;
         min-width: 0;
+    }
+    .intro-sound-panel,
+    .intro-player-panel {
+        position: static;
+        left: auto;
+        bottom: auto;
+        width: 100%;
+        transform: none;
+        margin-top: 0;
+        max-height: 0;
+        overflow: hidden;
+        padding-top: 0;
+        padding-bottom: 0;
+        border-width: 0;
+        opacity: 1;
+        visibility: hidden;
+        pointer-events: none;
+        box-shadow: none;
+    }
+    #intro-overlay.sound-panel-open .intro-sound-panel,
+    #intro-overlay.player-panel-open .intro-player-panel {
+        margin-top: 14px;
+        max-height: 70vh;
+        padding-top: 14px;
+        padding-bottom: 12px;
+        border-width: 1px;
+        visibility: visible;
+        pointer-events: auto;
+        box-shadow: 0 18px 36px rgba(0,0,0,.34);
     }
     .intro-player-grid { grid-template-columns: 1fr; }
     .intro-sound-row,
@@ -5982,7 +6061,7 @@ to { transform: rotate(360deg); }
   opacity: 0;
 }
 .tt-question-text-inner {
-  width: min(82vw, 1220px);
+  width: min(calc(var(--stage-width) * 0.82), 1220px);
   max-width: 100%;
   max-height: 100%;
   margin: 0 auto;
@@ -6000,7 +6079,7 @@ to { transform: rotate(360deg); }
   grid-template-rows: minmax(0, 1fr) auto;
   gap: clamp(10px, 1.6vh, 16px);
   align-content: center;
-  width: min(100vw, calc(100vw - 146px));
+  width: min(var(--stage-width), calc(var(--stage-width) - 146px));
 }
 .tt-question-copy {
   text-wrap: balance;
@@ -6019,7 +6098,7 @@ to { transform: rotate(360deg); }
 .tt-question-media-card img {
   display: block;
   width: 100%;
-  max-height: clamp(266px, 50.8vh, 678px);
+  max-height: min(calc(var(--stage-height) * 0.508), 678px);
   object-fit: contain;
   background: rgba(8, 12, 44, 0.5);
 }
@@ -6583,7 +6662,7 @@ to { transform: rotate(360deg); }
     width: 100%;
   }
   .tt-question-media-card img {
-    max-height: min(36vh, 340px);
+    max-height: min(calc(var(--stage-height) * 0.36), 340px);
   }
   .tt-answer-content {
     padding: 18px 12px 18px;
@@ -6627,7 +6706,7 @@ to { transform: rotate(360deg); }
     font-size: 13px;
   }
   .tt-question-media-card img {
-    max-height: min(30vh, 250px);
+    max-height: min(calc(var(--stage-height) * 0.30), 250px);
   }
 }
 </style>
@@ -7747,9 +7826,12 @@ window.transferTriviaDeck = {};
 
   function getQuestionModalBottomLimit() {
     var bottomPanel = document.getElementById("scoreboard-panel");
-    var viewportH = (window.visualViewport && window.visualViewport.height) ? window.visualViewport.height : window.innerHeight;
-    if (!bottomPanel) return viewportH - 8;
-    return Math.min(viewportH - 4, bottomPanel.getBoundingClientRect().top);
+    var rootStyles = window.getComputedStyle(document.documentElement);
+    var stageTop = parseFloat(rootStyles.getPropertyValue("--stage-top")) || 0;
+    var stageH = parseFloat(rootStyles.getPropertyValue("--stage-height")) || ((window.visualViewport && window.visualViewport.height) ? window.visualViewport.height : window.innerHeight);
+    var stageBottom = stageTop + stageH;
+    if (!bottomPanel) return stageBottom - 8;
+    return Math.min(stageBottom - 4, bottomPanel.getBoundingClientRect().top);
   }
 
   function refreshModalLayout() {
@@ -7766,8 +7848,8 @@ window.transferTriviaDeck = {};
     var headerBottom = header ? header.getBoundingClientRect().bottom : modalRect.top;
     var positionOfBottom = getQuestionModalBottomLimit();
     var bodyTop = Math.max(0, Math.round(headerBottom - modalRect.top));
-    var bodyBottom = Math.max(bodyTop + 220, Math.round(positionOfBottom - modalRect.top));
-    var h = Math.max(220, bodyBottom - bodyTop);
+    var bodyBottom = Math.max(bodyTop + 160, Math.round(positionOfBottom - modalRect.top));
+    var h = Math.max(160, bodyBottom - bodyTop);
 
     qModalBody.style.position = "absolute";
     qModalBody.style.left = "0";
@@ -7792,10 +7874,10 @@ window.transferTriviaDeck = {};
     var answerVisible = qModal.classList.contains("answer-visible");
     var answerCollapsed = qModal.classList.contains("answer-collapsed");
     var answerHeight = answerVisible
-      ? (answerCollapsed ? Math.max(30, Math.round(h * 0.05)) : Math.max(220, Math.round(h * 0.66)))
-      : Math.max(150, Math.round(h * 0.24));
+      ? (answerCollapsed ? Math.max(28, Math.round(h * 0.05)) : Math.max(124, Math.round(h * 0.58)))
+      : Math.max(92, Math.round(h * 0.18));
     var questionBottom = bottomGap;
-    var questionHeight = Math.max(220, h);
+    var questionHeight = Math.max(160, h);
 
     questionPanel.style.left = questionInsetX + "px";
     questionPanel.style.right = questionInsetX + "px";
@@ -7884,12 +7966,13 @@ window.transferTriviaDeck = {};
       var textTarget = questionCopy || questionInner;
       var questionText = (textTarget.textContent || "").trim();
       var textLength = questionText.length;
+      var modalWidth = modalEl.clientWidth || questionBox.clientWidth || window.innerWidth || 1200;
       if (textLength <= 42) {
-        questionInner.style.width = "min(68vw, 980px)";
+        questionInner.style.width = Math.min(Math.round(modalWidth * 0.68), 980) + "px";
       } else if (textLength <= 90) {
-        questionInner.style.width = "min(76vw, 1100px)";
+        questionInner.style.width = Math.min(Math.round(modalWidth * 0.76), 1100) + "px";
       } else {
-        questionInner.style.width = "min(82vw, 1220px)";
+        questionInner.style.width = Math.min(Math.round(modalWidth * 0.82), 1220) + "px";
       }
       var boxStyles = window.getComputedStyle(questionBox);
       var padX = (parseFloat(boxStyles.paddingLeft) || 0) + (parseFloat(boxStyles.paddingRight) || 0);
