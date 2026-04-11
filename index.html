@@ -5001,23 +5001,12 @@ var waves = [shuffleArray(even.slice()), shuffleArray(odd.slice())];        var 
         if(!root){ return; }
         var viewportH = getViewportHeight();
         var viewportW = window.innerWidth || document.documentElement.clientWidth || 0;
-        var stageW = viewportW;
-        var stageH = viewportH;
-        if(viewportW > 0 && viewportH > 0){
-            if((viewportW / viewportH) > (16 / 9)){
-                stageH = viewportH;
-                stageW = Math.round(stageH * (16 / 9));
-            } else {
-                stageW = viewportW;
-                stageH = Math.round(stageW * (9 / 16));
-            }
-        }
-        stageW = Math.max(1, stageW);
-        stageH = Math.max(1, stageH);
-        var stageLeft = Math.max(0, Math.round((viewportW - stageW) / 2));
+        var stageW = Math.max(1, viewportW);
+        var stageH = Math.max(1, viewportH);
+        var stageLeft = 0;
         var stageTop = 0;
-        var stageRightGap = Math.max(0, viewportW - stageLeft - stageW);
-        var stageBottomGap = Math.max(0, viewportH - stageTop - stageH);
+        var stageRightGap = 0;
+        var stageBottomGap = 0;
         root.style.setProperty("--vvh", viewportH + "px");
         root.style.setProperty("--stage-width", stageW + "px");
         root.style.setProperty("--stage-height", stageH + "px");
