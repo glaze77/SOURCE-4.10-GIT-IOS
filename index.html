@@ -2454,13 +2454,19 @@ body::before {
     position: fixed;
     inset: 0;
     z-index: 14000;
-    overflow: hidden;
-    padding: 24px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding:
+        max(24px, env(safe-area-inset-top, 0px))
+        max(16px, env(safe-area-inset-right, 0px))
+        max(24px, env(safe-area-inset-bottom, 0px))
+        max(16px, env(safe-area-inset-left, 0px));
     background:
         radial-gradient(circle at 50% 0%, rgba(49,82,194,.24) 0%, rgba(17,28,78,.18) 24%, rgba(3,7,26,.12) 48%, rgba(0,0,0,.40) 84%),
         linear-gradient(to bottom, rgba(6,10,32,.10) 0%, rgba(6,10,32,.12) 52%, rgba(0,0,0,.34) 100%),
         rgba(4,8,30,.46);
     backdrop-filter: blur(8px) saturate(.92);
+    -webkit-overflow-scrolling: touch;
     transition: opacity .35s ease, visibility .35s ease;
 }
 #intro-overlay::before {
@@ -2482,13 +2488,14 @@ body::before {
     position: relative;
 }
 .intro-stage {
-    position: absolute;
-    inset: 0;
+    position: relative;
+    inset: auto;
     z-index: 3;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
-    padding: 24px;
+    min-height: calc(var(--vvh) - max(48px, env(safe-area-inset-top, 0px)) - max(48px, env(safe-area-inset-bottom, 0px)));
+    padding: 24px 0 max(120px, env(safe-area-inset-bottom, 0px));
 }
 .intro-load-veil {
     position: absolute;
@@ -2540,6 +2547,7 @@ body::before {
     position: relative;
     z-index: 3;
     width: min(760px, 100%);
+    max-width: 100%;
     display: flex;
     flex-direction: column;
     background: linear-gradient(180deg, rgba(14,25,93,.94), rgba(6,14,53,.94));
@@ -2610,6 +2618,7 @@ body::before {
     display: flex;
     justify-content: center;
     align-items: center;
+    flex-wrap: wrap;
     gap: 18px;
     width: fit-content;
     margin: 28px auto 0;
@@ -3268,11 +3277,51 @@ body::before {
 }
 
 @media (max-width: 720px) {
-    .intro-card { padding: 22px 20px 20px; border-radius: 22px; }
+    #intro-overlay {
+        padding:
+            max(16px, env(safe-area-inset-top, 0px))
+            max(12px, env(safe-area-inset-right, 0px))
+            max(16px, env(safe-area-inset-bottom, 0px))
+            max(12px, env(safe-area-inset-left, 0px));
+    }
+    .intro-stage {
+        min-height: calc(var(--vvh) - max(32px, env(safe-area-inset-top, 0px)) - max(32px, env(safe-area-inset-bottom, 0px)));
+        padding: 12px 0 max(112px, env(safe-area-inset-bottom, 0px));
+    }
+    .intro-card {
+        padding: 18px 16px 16px;
+        border-radius: 22px;
+    }
     .intro-palm { height: min(74vh, 760px); max-width: 54vw; }
     .intro-card h1 { font-size: 34px; }
     .intro-copy { font-size: 16px; }
+    .intro-copy-media.hand img { max-width: min(100%, 220px); }
+    .intro-actions {
+        position: sticky;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+        width: 100%;
+        margin-top: 18px;
+        padding-top: 12px;
+        padding-bottom: 4px;
+        background: linear-gradient(180deg, rgba(9,16,60,0), rgba(9,16,60,.92) 26%, rgba(9,16,60,.98));
+    }
+    .intro-btn,
+    .intro-btn.primary,
+    #intro-sound-panel-toggle-btn,
+    #intro-player-panel-toggle-btn {
+        width: 100%;
+        min-width: 0;
+    }
     .intro-player-grid { grid-template-columns: 1fr; }
+    .intro-sound-row,
+    .tt-global-sound-row {
+        grid-template-columns: 1fr;
+        gap: 6px;
+    }
+    .intro-sound-value,
+    .tt-global-sound-value {
+        text-align: left;
+    }
     .load-btn { min-width: 160px; font-size: 19px; padding: 14px 22px; }
     .vice-title { top: 34px; left: 8px; width: min(50vw, 360px); }
     .vice-title-top { margin-left: 0; font-size: clamp(46px, 9vw, 76px); }
