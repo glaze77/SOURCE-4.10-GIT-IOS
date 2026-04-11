@@ -1375,6 +1375,16 @@ body.tt-drawing-active #tt-meter-stage * { pointer-events: auto; }
 
   /* Palms: shorter so they don't dominate the landscape frame */
   .intro-palm { height: min(85vh, 380px); max-width: 18vw; }
+
+  /* Game board: tighter padding/gaps and smaller category header row */
+  .grid { padding: 8px; gap: 6px; }
+  .grid-row { gap: 6px; }
+  .grid-cell { border-radius: 12px; }
+  .grid-row-cats .grid-cell { min-height: 0; }
+  .grid-row-cats .cell-inner { min-height: 48px; font-size: clamp(10px, 2vh, 18px); padding: 6px 8px; }
+
+  /* Answer panel text: reduce min font floors for the short viewport */
+  .tt-answer-part { padding: 8px 10px; border-radius: 12px; }
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -5656,11 +5666,23 @@ window.transferTriviaDeck = {};
     var bottomGap = 4;
     var answerVisible = qModal.classList.contains("answer-visible");
     var answerCollapsed = qModal.classList.contains("answer-collapsed");
-    var answerHeight = answerVisible
-      ? (answerCollapsed ? Math.max(30, Math.round(h * 0.05)) : Math.max(220, Math.round(h * 0.66)))
-      : Math.max(150, Math.round(h * 0.24));
-    var questionBottom = bottomGap;
-    var questionHeight = Math.max(220, h);
+    var isLandMob = window.innerWidth > window.innerHeight && window.innerHeight < 550;
+    var answerHeight, questionHeight;
+
+    if (isLandMob) {
+      // Non-overlapping stacked layout for landscape mobile — question sits above answer
+      answerHeight = answerVisible
+        ? (answerCollapsed ? Math.max(22, Math.round(h * 0.08)) : Math.max(60, Math.round(h * 0.36)))
+        : Math.max(40, Math.round(h * 0.20));
+      var panelGap = Math.max(6, Math.round(h * 0.03));
+      questionHeight = Math.max(60, h - answerHeight - panelGap);
+    } else {
+      // Original overlapping layout — answer sheet floats over question on large screens
+      answerHeight = answerVisible
+        ? (answerCollapsed ? Math.max(30, Math.round(h * 0.05)) : Math.max(220, Math.round(h * 0.66)))
+        : Math.max(150, Math.round(h * 0.24));
+      questionHeight = Math.max(220, h);
+    }
 
     questionPanel.style.left = questionInsetX + "px";
     questionPanel.style.right = questionInsetX + "px";
