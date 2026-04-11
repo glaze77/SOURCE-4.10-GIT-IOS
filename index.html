@@ -1022,6 +1022,78 @@ kbd {
   20% { transform: translateY(-2px) scale(1.03); box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 0 28px rgba(255,232,126,.52), 0 0 70px rgba(255,232,126,.22); }
   100% { transform: translateY(0) scale(1); box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 0 24px rgba(255,232,126,.38), 0 0 50px rgba(255,232,126,.14); }
 }
+/* ─── Streak fire on player name box ──────────────────────────────── */
+@keyframes streakHeat {
+  0%, 100% {
+    box-shadow: 0 0 6px rgba(255,120,0,.55), 0 0 14px rgba(255,70,0,.22);
+    border-color: rgba(255,120,0,.60);
+    background: rgba(255,70,0,.10);
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(255,165,0,.80), 0 0 26px rgba(255,90,0,.38);
+    border-color: rgba(255,165,0,.80);
+    background: rgba(255,95,0,.18);
+  }
+}
+@keyframes streakFire {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(255,75,0,.85), 0 0 22px rgba(255,130,0,.52), 0 0 40px rgba(255,45,0,.22);
+    border-color: rgba(255,110,0,.88);
+    background: rgba(255,55,0,.14);
+  }
+  33% {
+    box-shadow: 0 0 18px rgba(255,190,0,1), 0 0 34px rgba(255,110,0,.72), 0 0 58px rgba(255,60,0,.32);
+    border-color: rgba(255,210,0,.95);
+    background: rgba(255,95,0,.22);
+  }
+  66% {
+    box-shadow: 0 0 13px rgba(255,55,0,.90), 0 0 26px rgba(255,115,0,.60), 0 0 48px rgba(200,35,0,.26);
+    border-color: rgba(255,80,0,.88);
+    background: rgba(200,35,0,.16);
+  }
+}
+@keyframes streakPulse {
+  0% {
+    box-shadow: 0 0 28px rgba(255,230,0,1), 0 0 56px rgba(255,150,0,.88), 0 0 80px rgba(255,80,0,.50);
+    border-color: rgba(255,235,0,1);
+    background: rgba(255,165,0,.38);
+    transform: scaleY(1.06) scaleX(1.03);
+  }
+  100% { transform: scale(1); }
+}
+.score-entry.streak-heating .score-name {
+  animation: streakHeat 1.8s ease-in-out infinite;
+  will-change: box-shadow, border-color, background;
+}
+.score-entry.streak-on-fire .score-name {
+  animation: streakFire 0.82s ease-in-out infinite;
+  will-change: box-shadow, border-color, background;
+}
+.score-entry.streak-pulse .score-name {
+  animation: streakPulse 0.45s ease-out both !important;
+}
+/* ─── On-fire answered cell flash ─────────────────────────────────── */
+@keyframes ttFireAnswerFlash {
+  0%   { box-shadow: inset 0 1px 0 rgba(255,255,255,.07), 0 12px 26px rgba(0,0,0,.26); filter: brightness(1); }
+  10%  { box-shadow: 0 0 0 3px rgba(255,185,0,.95), 0 0 48px rgba(255,130,0,.90), 0 0 90px rgba(255,65,0,.60), inset 0 0 36px rgba(255,120,0,.46); filter: brightness(2.6); }
+  32%  { box-shadow: 0 0 0 2px rgba(255,110,0,.72), 0 0 28px rgba(255,90,0,.68), 0 0 58px rgba(255,50,0,.40); filter: brightness(1.75); }
+  100% { box-shadow: inset 0 1px 0 rgba(255,255,255,.07), 0 12px 26px rgba(0,0,0,.26); filter: brightness(1); }
+}
+@keyframes ttFireAnswerFlashInner {
+  0%   { opacity: .05; }
+  7%   { opacity: 1; color: #ffe040 !important; text-shadow: 0 0 18px rgba(255,190,0,.95); }
+  28%  { opacity: .55; }
+  100% { opacity: .05; }
+}
+.grid-cell.tt-fire-answer-flash {
+  animation: ttFireAnswerFlash 1.5s ease-out both !important;
+  z-index: 2;
+}
+.grid-cell.tt-fire-answer-flash .cell-inner {
+  animation: ttFireAnswerFlashInner 1.5s ease-out both !important;
+}
+/* ─────────────────────────────────────────────────────────────────── */
+
 #tt-victory-lock-banner {
   position: fixed;
   left: 50%;
@@ -3632,7 +3704,9 @@ function render(){
                 + (scoringReady ? " controls-visible" : " controls-hidden")
                 + (rankMeta ? " rank-" + rankMeta.tier : "")
                 + (rankMeta && rankMeta.animated ? " rank-animated" : "")
-                + (lockedWinnerIndex === index ? " victory-locked" : "");
+                + (lockedWinnerIndex === index ? " victory-locked" : "")
+                + (state.streakPlayerIndex === index && state.streakCount === 2 ? " streak-heating" : "")
+                + (state.streakPlayerIndex === index && state.streakCount >= 3 ? " streak-on-fire" : "");
             card.setAttribute("data-player-index", String(index));
 
 
@@ -3715,6 +3789,7 @@ function render(){
         refreshScoreControlState();
         updateProgress();
         updateSoundUI();
+        ttSyncStreakFires();
     }
 
     var ttSoundAssets = {
@@ -3731,7 +3806,9 @@ function render(){
     var ttAudioCache = {};
     var ttStreakSoundAssets = {
         heatingUp: "media/Audio/hes-heating-up.mp3",
-        onFire: "media/Audio/hes-on-fire_h9DW1bE.mp3"
+        onFire: "media/Audio/hes-on-fire_h9DW1bE.mp3",
+        barrelExplode: "media/Audio/barrel-exploding-soundbible.mp3",
+        streakEnd: "media/Audio/woosh.mp3"
     };
     var ttStreakAudioCache = {};
     var ttVolumeStorageKey = 'transfer-trivia-volume-v3';
@@ -4881,7 +4958,7 @@ function render(){
     }
 
     function playWrongSound(){
-        resetCorrectStreak();
+        resetCorrectStreak(1000); /* delay streak-end effects until after buzzer */
         saveState();
         playAudioAsset('wrong');
         showWrongOverlay();
@@ -4892,16 +4969,362 @@ function render(){
         playAudioAsset('dailyDouble');
     }
 
-    function resetCorrectStreak(){
+    function resetCorrectStreak(streakEndDelayMs){
+        var hadStreak = Number(state.streakCount) >= 2;
         state.streakPlayerIndex = null;
         state.streakCount = 0;
+        var doStreakEnd = function(){
+            ttSyncStreakFires();
+            if(hadStreak){ playStreakSound("streakEnd"); }
+        };
+        if(streakEndDelayMs > 0){
+            setTimeout(doStreakEnd, streakEndDelayMs);
+        } else {
+            doStreakEnd();
+        }
     }
+
+    function triggerStreakPulse(playerIndex){
+        var card = document.querySelector('.score-entry[data-player-index="' + playerIndex + '"]');
+        if(!card){ return; }
+        card.classList.remove('streak-pulse');
+        void card.offsetWidth;
+        card.classList.add('streak-pulse');
+        setTimeout(function(){ card.classList.remove('streak-pulse'); }, 450);
+    }
+
+    /* ── NBA Jam canvas fire + smoke system ────────────────────────── */
+    var ttFireCanvas = null;
+    var ttFireCtx = null;
+    /* mode: 'fire' | 'smoke'
+       { particles[], intense, burst, mode, smokeTick, maxSmokeTick } */
+    var ttFirePlayers = {};
+    var ttFireRAF = null;
+
+    function ttEnsureFireCanvas(){
+        if(ttFireCanvas){ return; }
+        ttFireCanvas = document.createElement('canvas');
+        ttFireCanvas.id = 'tt-fire-canvas';
+        ttFireCanvas.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:9998;';
+        ttFireCanvas.width = window.innerWidth;
+        ttFireCanvas.height = window.innerHeight;
+        document.body.appendChild(ttFireCanvas);
+        ttFireCtx = ttFireCanvas.getContext('2d');
+        window.addEventListener('resize', function(){
+            if(ttFireCanvas){
+                ttFireCanvas.width = window.innerWidth;
+                ttFireCanvas.height = window.innerHeight;
+            }
+        });
+    }
+
+    function ttSpawnFireParticle(rect, intense){
+        var x = rect.left + rect.width * 0.08 + Math.random() * rect.width * 0.84;
+        var y = rect.top + rect.height * 0.6;
+        return {
+            x: x, y: y,
+            vx: (Math.random() - 0.5) * (intense ? 1.1 : 0.6),
+            vy: -(0.9 + Math.random() * (intense ? 2.6 : 1.4)),
+            life: 0,
+            maxLife: Math.round(28 + Math.random() * (intense ? 38 : 22)),
+            size: 3.5 + Math.random() * (intense ? 8 : 4.5),
+            wobble: Math.random() * Math.PI * 2,
+            wobbleSpeed: 0.07 + Math.random() * 0.13
+        };
+    }
+
+    function ttSpawnSmokeParticle(rect){
+        var x = rect.left + rect.width * 0.05 + Math.random() * rect.width * 0.90;
+        var y = rect.top + rect.height * 0.4;
+        return {
+            x: x, y: y,
+            vx: (Math.random() - 0.5) * 0.45,
+            vy: -(0.25 + Math.random() * 0.55),
+            life: 0,
+            maxLife: Math.round(55 + Math.random() * 55),
+            size: 9 + Math.random() * 14,
+            wobble: Math.random() * Math.PI * 2,
+            wobbleSpeed: 0.025 + Math.random() * 0.045
+        };
+    }
+
+    function ttDrawFireParticle(ctx, p){
+        p.life++;
+        p.wobble += p.wobbleSpeed;
+        p.x += p.vx + Math.sin(p.wobble) * 0.55;
+        p.y += p.vy;
+        p.size *= 0.987;
+        var t = p.life / p.maxLife;
+        if(t >= 1){ return false; }
+        var alpha = (1 - t) * (1 - t);
+        var size = p.size * (1 - t * 0.45);
+        var r, g, b;
+        if(t < 0.18){
+            var tt = t / 0.18;
+            r = 255; g = 255; b = Math.round((1 - tt) * 200);
+        } else if(t < 0.52){
+            var tt = (t - 0.18) / 0.34;
+            r = 255; g = Math.round(255 - tt * 130); b = 0;
+        } else {
+            var tt = (t - 0.52) / 0.48;
+            r = Math.round(255 - tt * 110); g = Math.round(125 - tt * 125); b = 0;
+        }
+        var grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, size);
+        grad.addColorStop(0, 'rgba(' + r + ',' + g + ',' + b + ',' + (alpha * 0.92) + ')');
+        grad.addColorStop(1, 'rgba(' + r + ',' + g + ',' + b + ',0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, size, 0, Math.PI * 2);
+        ctx.fill();
+        return true;
+    }
+
+    function ttDrawSmokeParticle(ctx, p){
+        p.life++;
+        p.wobble += p.wobbleSpeed;
+        p.x += p.vx + Math.sin(p.wobble) * 0.35;
+        p.y += p.vy;
+        p.size += 0.12; /* smoke expands as it rises */
+        var t = p.life / p.maxLife;
+        if(t >= 1){ return false; }
+        /* fade in briefly then fade out */
+        var alpha = t < 0.12 ? t / 0.12 * 0.55 : (1 - t) * 0.55;
+        var size = p.size;
+        var brightness = Math.round(55 + t * 130); /* dark gray → lighter */
+        var grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, size);
+        grad.addColorStop(0, 'rgba(' + brightness + ',' + brightness + ',' + brightness + ',' + alpha + ')');
+        grad.addColorStop(0.5, 'rgba(' + brightness + ',' + brightness + ',' + brightness + ',' + (alpha * 0.4) + ')');
+        grad.addColorStop(1, 'rgba(' + brightness + ',' + brightness + ',' + brightness + ',0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, size, 0, Math.PI * 2);
+        ctx.fill();
+        return true;
+    }
+
+    function ttFireLoop(){
+        ttFireRAF = requestAnimationFrame(ttFireLoop);
+        var ctx = ttFireCtx;
+        if(!ctx){ return; }
+        var keys = Object.keys(ttFirePlayers);
+        if(!keys.length && !ttCellFires.length){
+            cancelAnimationFrame(ttFireRAF);
+            ttFireRAF = null;
+            ctx.clearRect(0, 0, ttFireCanvas.width, ttFireCanvas.height);
+            return;
+        }
+        ctx.clearRect(0, 0, ttFireCanvas.width, ttFireCanvas.height);
+
+        /* ── Pass 1: fire particles (additive screen blend) ── */
+        ctx.globalCompositeOperation = 'screen';
+        keys.forEach(function(pidStr){
+            var pid = parseInt(pidStr, 10);
+            var fire = ttFirePlayers[pid];
+            if(fire.mode !== 'fire'){ return; }
+            var nameBox = document.querySelector('.score-entry[data-player-index="' + pid + '"] .score-name');
+            if(!nameBox){ delete ttFirePlayers[pid]; return; }
+            var rect = nameBox.getBoundingClientRect();
+            var spawnCount = (fire.burst > 0 ? 7 : 0) + (fire.intense ? 2 : 1);
+            if(fire.burst > 0){ fire.burst--; }
+            for(var s = 0; s < spawnCount; s++){
+                fire.particles.push(ttSpawnFireParticle(rect, fire.intense));
+            }
+            fire.particles = fire.particles.filter(function(p){ return ttDrawFireParticle(ctx, p); });
+        });
+
+        /* ── Pass 2: smoke particles (normal blend) ── */
+        ctx.globalCompositeOperation = 'source-over';
+        keys.forEach(function(pidStr){
+            var pid = parseInt(pidStr, 10);
+            var fire = ttFirePlayers[pid];
+            if(fire.mode !== 'smoke'){ return; }
+            var nameBox = document.querySelector('.score-entry[data-player-index="' + pid + '"] .score-name');
+            if(!nameBox){ delete ttFirePlayers[pid]; return; }
+            var rect = nameBox.getBoundingClientRect();
+            fire.smokeTick++;
+            /* Spawn smoke particles for the first ~2 s (120 frames), tapering off */
+            var spawnChance = Math.max(0, 1 - fire.smokeTick / 120);
+            if(Math.random() < spawnChance * 0.85){
+                fire.particles.push(ttSpawnSmokeParticle(rect));
+                if(fire.intense && Math.random() < spawnChance * 0.5){
+                    fire.particles.push(ttSpawnSmokeParticle(rect));
+                }
+            }
+            fire.particles = fire.particles.filter(function(p){ return ttDrawSmokeParticle(ctx, p); });
+            /* Remove once smoke has fully dissipated (4 s total) */
+            if(fire.smokeTick >= fire.maxSmokeTick && !fire.particles.length){
+                delete ttFirePlayers[pid];
+            }
+        });
+
+        /* ── Pass 3: cell fires (answer block bursts) ── */
+        ttProcessCellFires(ctx);
+
+        ctx.globalCompositeOperation = 'source-over';
+    }
+
+    function ttStartPlayerFire(playerIndex, intense){
+        ttEnsureFireCanvas();
+        var existing = ttFirePlayers[playerIndex];
+        if(existing && existing.mode === 'fire'){
+            existing.intense = !!intense;
+        } else {
+            ttFirePlayers[playerIndex] = { particles: [], mode: 'fire', intense: !!intense, burst: 0 };
+        }
+        if(!ttFireRAF){ ttFireLoop(); }
+    }
+
+    function ttTransitionToSmoke(playerIndex){
+        var existing = ttFirePlayers[playerIndex];
+        if(!existing){ return; }
+        var wasIntense = existing.intense;
+        /* Carry existing fire particles over; they'll naturally die out quickly */
+        existing.mode = 'smoke';
+        existing.intense = wasIntense;
+        existing.burst = 0;
+        existing.smokeTick = 0;
+        existing.maxSmokeTick = 240; /* 4 s at 60 fps */
+    }
+
+    function ttStopPlayerFire(playerIndex){
+        delete ttFirePlayers[playerIndex];
+    }
+
+    function ttPulsePlayerFire(playerIndex){
+        var f = ttFirePlayers[playerIndex];
+        if(f && f.mode === 'fire'){ f.burst = 14; }
+    }
+
+    function ttSyncStreakFires(){
+        var numPlayers = state && state.players ? state.players.length : 0;
+        for(var i = 0; i < numPlayers; i++){
+            if(state.streakPlayerIndex === i && state.streakCount >= 3){
+                ttStartPlayerFire(i, true);
+            } else if(state.streakPlayerIndex === i && state.streakCount === 2){
+                ttStartPlayerFire(i, false);
+            } else {
+                /* If a fire was active, transition to smoke; ignore if already smoking */
+                var f = ttFirePlayers[i];
+                if(f && f.mode === 'fire'){
+                    ttTransitionToSmoke(i);
+                }
+            }
+        }
+    }
+
+    function ttFireAnswerFlash(cell){
+        if(!cell){ return; }
+        cell.classList.remove('tt-fire-answer-flash');
+        void cell.offsetWidth;
+        cell.classList.add('tt-fire-answer-flash');
+        setTimeout(function(){ cell.classList.remove('tt-fire-answer-flash'); }, 1500);
+    }
+
+    /* Temporary fire burst on a gameboard answer cell (replicates player fire) */
+    var ttCellFires = []; /* [{ el, particles[], tick, maxTick, smokeTick, mode }] */
+
+    function ttFireCellElement(el){
+        if(!el){ return; }
+        ttEnsureFireCanvas();
+        ttCellFires.push({ el: el, particles: [], tick: 0, maxTick: 160, mode: 'fire' });
+        if(!ttFireRAF){ ttFireLoop(); }
+    }
+
+    function ttSpawnCellFrameParticle(rect){
+        /* Spawn along all 4 edges proportional to length.
+           Bottom edge gets the biggest, strongest particles. */
+        var w = rect.width, h = rect.height;
+        var total = 2 * (w + h);
+        var r = Math.random() * total;
+        var x, y, vx, vy, size, maxLife;
+        if(r < w){
+            /* top edge */
+            x = rect.left + r;
+            y = rect.top + Math.random() * 2;
+            vx = (Math.random() - 0.5) * 0.9;
+            vy = -(0.7 + Math.random() * 1.8);
+            size = 3 + Math.random() * 6;
+            maxLife = 28 + Math.random() * 28;
+        } else if(r < w + h){
+            /* right edge */
+            x = rect.right - Math.random() * 2;
+            y = rect.top + (r - w);
+            vx = 0.3 + Math.random() * 0.7;
+            vy = -(0.8 + Math.random() * 2.2);
+            size = 3 + Math.random() * 7;
+            maxLife = 28 + Math.random() * 32;
+        } else if(r < 2 * w + h){
+            /* bottom edge — heaviest fire */
+            x = rect.left + (r - w - h);
+            y = rect.bottom - Math.random() * 2;
+            vx = (Math.random() - 0.5) * 1.3;
+            vy = -(1.2 + Math.random() * 3.4);
+            size = 5 + Math.random() * 11;
+            maxLife = 32 + Math.random() * 42;
+        } else {
+            /* left edge */
+            x = rect.left + Math.random() * 2;
+            y = rect.top + (r - 2 * w - h);
+            vx = -(0.3 + Math.random() * 0.7);
+            vy = -(0.8 + Math.random() * 2.2);
+            size = 3 + Math.random() * 7;
+            maxLife = 28 + Math.random() * 32;
+        }
+        return {
+            x: x, y: y, vx: vx, vy: vy,
+            life: 0, maxLife: Math.round(maxLife),
+            size: size,
+            wobble: Math.random() * Math.PI * 2,
+            wobbleSpeed: 0.07 + Math.random() * 0.14
+        };
+    }
+
+    function ttProcessCellFires(ctx){
+        if(!ttCellFires.length){ return; }
+        ctx.globalCompositeOperation = 'screen';
+        ttCellFires = ttCellFires.filter(function(cf){
+            var rect = cf.el.getBoundingClientRect();
+            if(!rect || rect.width === 0){ return false; }
+            if(cf.mode === 'fire'){
+                cf.tick++;
+                /* More particles to cover full perimeter */
+                var spawnCount = cf.tick <= cf.maxTick ? 7 : 0;
+                for(var s = 0; s < spawnCount; s++){
+                    cf.particles.push(ttSpawnCellFrameParticle(rect));
+                }
+                cf.particles = cf.particles.filter(function(p){ return ttDrawFireParticle(ctx, p); });
+                if(cf.tick >= cf.maxTick && !cf.particles.length){
+                    cf.mode = 'smoke';
+                    cf.smokeTick = 0;
+                    cf.maxSmokeTick = 120;
+                }
+                return true;
+            } else {
+                /* smoke phase */
+                ctx.globalCompositeOperation = 'source-over';
+                cf.smokeTick++;
+                var spawnChance = Math.max(0, 1 - cf.smokeTick / 60);
+                if(Math.random() < spawnChance * 0.7){
+                    cf.particles.push(ttSpawnSmokeParticle(rect));
+                }
+                cf.particles = cf.particles.filter(function(p){ return ttDrawSmokeParticle(ctx, p); });
+                ctx.globalCompositeOperation = 'screen';
+                return cf.smokeTick < cf.maxSmokeTick || cf.particles.length > 0;
+            }
+        });
+    }
+    /* ──────────────────────────────────────────────────────────────── */
 
     function applyCorrectStreak(playerIndex){
         var currentStreakPlayer = typeof state.streakPlayerIndex === "number" ? state.streakPlayerIndex : null;
         var currentStreakCount = Number(state.streakCount) > 0 ? Number(state.streakCount) : 0;
 
         if(currentStreakPlayer !== playerIndex){
+            /* Previous player's streak is ending — play woosh and start smoke */
+            if(currentStreakCount >= 2){
+                playStreakSound("streakEnd");
+                ttSyncStreakFires();
+            }
             state.streakPlayerIndex = playerIndex;
             state.streakCount = 1;
             return;
@@ -4912,6 +5335,8 @@ function render(){
             playStreakSound("heatingUp");
         } else if(state.streakCount === 3){
             playStreakSound("onFire");
+        } else if(state.streakCount >= 4){
+            playStreakSound("barrelExplode");
         }
     }
 
@@ -4945,6 +5370,7 @@ function render(){
         applyCorrectStreak(playerIndex);
 
         var activeQuestion = document.querySelector(".active-question");
+        var answeredCell = activeQuestion; /* save ref before inert/render */
         if(activeQuestion){
             activeQuestion.classList.add("inert");
             activeQuestion.setAttribute("aria-label", "Answered");
@@ -4955,6 +5381,15 @@ function render(){
         }
         saveState();
         render();
+        /* Pulse the fire on every correct answer once the streak is on-fire (3+) */
+        if(state.streakPlayerIndex === playerIndex && state.streakCount >= 3){
+            triggerStreakPulse(playerIndex);
+            ttPulsePlayerFire(playerIndex);
+            ttFireAnswerFlash(answeredCell);   /* CSS glow border flash on grid cell */
+            /* Frame fire around the visible answer content block in the modal */
+            var answerBlock = document.querySelector('#question-modal .tt-answer-content');
+            ttFireCellElement(answerBlock || answeredCell);
+        }
     }
 
     function undoLast(){
