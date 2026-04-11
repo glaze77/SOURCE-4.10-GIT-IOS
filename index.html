@@ -441,6 +441,13 @@ kbd {
   filter: brightness(2.1);
   opacity: 1;
 }
+/* Value cell that has been illuminated: text stays white for the rest of the animation */
+#gameplay.tt-board-reveal-mode .grid-row-questions .grid-cell.tt-value-revealed .cell-inner {
+  color: #fff !important;
+  text-shadow: 0 0 8px rgba(255,255,255,.35);
+  filter: brightness(1);
+  opacity: 1;
+}
 #gameplay.tt-board-reveal-mode .grid-row-cats .cat-cell {
   color: transparent !important;
   text-shadow: none !important;
@@ -4482,10 +4489,12 @@ function render(){
         intro.classList.add('intro-exiting'); /* CSS fades overlay after 1.5 s hold */
         fadeOutIntroMusic(musicFadeMs);
         /* Render the board early so it's fully ready when the overlay finishes
-           dissolving — board is NOT revealed yet, just pre-rendered. */
+           dissolving — board is NOT revealed yet, just pre-rendered. Apply the
+           dark/hidden state immediately so no text shows during the fadeout. */
         introExitTimers.push(setTimeout(function(){
             autoStartGame();
             refreshLayout();
+            markTopicsHiddenForReveal();
         }, gameplayKickoffMs));
         /* Board reveal fires after the overlay is completely gone, giving a clean
            beat of the sharp board before the cell-flash animation begins. */
@@ -4748,12 +4757,19 @@ function render(){
         for(var i = 0; i < topics.length; i++){
             topics[i].classList.add('tt-topic-reveal-ready');
         }
+        /* Clean up per-cell reveal markers — tt-board-reveal-mode is gone so
+           normal board styles take over and these are no longer needed. */
+        var revealedCells = document.querySelectorAll('.grid-row-questions .grid-cell.tt-value-revealed');
+        for(var j = 0; j < revealedCells.length; j++){
+            revealedCells[j].classList.remove('tt-value-revealed');
+        }
     }
 
     function revealTopicCell(catCell){
         if(!catCell || !catCell.classList.contains('tt-topic-hidden')){ return; }
         catCell.classList.remove('tt-topic-hidden', 'tt-topic-reveal-ready');
         catCell.classList.add('tt-topic-revealed');
+        playCorrectSound();
     }
 
     function bindTopicRevealEvents(){
@@ -4828,12 +4844,18 @@ function render(){
         waves.forEach(function(group, waveIndex){
             group.forEach(function(cell, cellIndex){
                 var startDelay = animOffset + waveIndex * waveGap + cellIndex * baseDelay;
+                var isValueCell = cell.closest ? !!cell.closest('.grid-row-questions') : cell.parentNode && cell.parentNode.classList && cell.parentNode.classList.contains('grid-row-questions');
                 boardRevealTimers.push(setTimeout(function(){
                     cell.classList.remove('tt-board-intro-flash');
                     void cell.offsetWidth;
                     cell.classList.add('tt-board-intro-flash');
                     boardRevealTimers.push(setTimeout(function(){
                         cell.classList.remove('tt-board-intro-flash');
+                        /* After the flash completes, value cells stay white — text
+                           remains revealed for the rest of the animation. */
+                        if(isValueCell){
+                            cell.classList.add('tt-value-revealed');
+                        }
                     }, 333));
                 }, startDelay));
             });
@@ -5215,6 +5237,9 @@ function render(){
             ensureAudio();
             state.introSeen = true;
             saveState();
+            /* Immediately hide all board text so the gameboard behind the
+               dissolving overlay is already dark before it comes into view. */
+            markTopicsHiddenForReveal();
             runIntroExitTransition(intro);
         });
         var introSoundMuteBtn = document.getElementById("intro-sound-mute-btn");
