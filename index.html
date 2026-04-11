@@ -9,6 +9,29 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="apple-mobile-web-app-title" content="Transfer Trivia"/>
 <title>Transfer Trivia</title>
+<script>
+/* iOS scroll-lock: prevent the document/body from scrolling.
+   touchmove is only allowed when the touch target is inside
+   an element that is actually scrollable (overflow auto/scroll). */
+(function(){
+    function isScrollable(el){
+        if(!el || el === document.body || el === document.documentElement){ return false; }
+        var style = window.getComputedStyle(el);
+        var overflow = style.overflow + style.overflowY + style.overflowX;
+        if(/auto|scroll/.test(overflow)){
+            // Only counts if it actually overflows
+            if(el.scrollHeight > el.clientHeight || el.scrollWidth > el.clientWidth){
+                return true;
+            }
+        }
+        return isScrollable(el.parentElement);
+    }
+    document.addEventListener('touchmove', function(e){
+        if(isScrollable(e.target)){ return; }
+        e.preventDefault();
+    }, { passive: false });
+})();
+</script>
 
 <style type="text/css">
             html {
@@ -23,7 +46,7 @@ body {
     width: 100%;
 	font-family:Verdana, Arial, Helvetica, sans-serif;
     overflow: hidden;
-    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: none;
 }
 
 * {
@@ -2505,6 +2528,8 @@ body::before {
     inset: 0;
     z-index: 14000;
     overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: none;
     padding: 24px;
     background:
         radial-gradient(circle at 50% 0%, rgba(49,82,194,.24) 0%, rgba(17,28,78,.18) 24%, rgba(3,7,26,.12) 48%, rgba(0,0,0,.40) 84%),
@@ -2539,6 +2564,9 @@ body::before {
     align-items: center;
     justify-content: center;
     padding: 24px;
+    overflow: hidden;
+    /* iOS: prevent stage itself from scrolling */
+    touch-action: none;
 }
 .intro-load-veil {
     position: absolute;
@@ -2601,6 +2629,12 @@ body::before {
     opacity: 0;
     transform: translateY(18px) scale(.988);
     transition: opacity 1.35s cubic-bezier(.2,.8,.22,1), transform 1.35s cubic-bezier(.2,.8,.22,1);
+    /* iOS scroll containment: card scrolls internally, never the page */
+    max-height: calc(100vh - 48px);
+    max-height: calc(100dvh - 48px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
 }
 #intro-overlay.card-visible .intro-card {
     opacity: 1;
