@@ -112,6 +112,7 @@ kbd {
   inset: 0;
   overflow: hidden;
   filter: blur(5px);
+  transition: filter .9s ease;
   box-sizing: border-box;
   padding-bottom: var(--app-bottom-bar-h);
   padding-top: env(safe-area-inset-top, 0px);
@@ -138,6 +139,14 @@ kbd {
 #gameplay.tt-bg-letter-pulse .grid-row:nth-child(even) .grid-cell:nth-child(odd) .cell-inner {
   animation: tt-bg-letter-pulse 8s linear infinite;
   animation-delay: -4s;
+}
+/* Freeze the board pulse in-place for the 2s intro exit pause */
+#gameplay.tt-bg-letter-pulse.tt-bg-letter-pause .cell-inner { animation-play-state: paused; }
+/* Start clearing gameplay's own blur the moment exit begins (5 s ease dissolve).
+   Overrides the default .9 s transition on #gameplay. */
+#gameplay.tt-blur-dissolve {
+  filter: blur(0px);
+  transition: filter 5s cubic-bezier(.4,0,.2,1);
 }
 @keyframes tt-bg-letter-pulse {
   0%, 20%, 100% {
@@ -1124,6 +1133,38 @@ body.tt-drawing-active #tt-meter-stage * { pointer-events: auto; }
 }
 #intro-overlay.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
 #intro-overlay > * { position: relative; }
+#intro-overlay.intro-exiting {
+  pointer-events: none;
+  opacity: 0;
+  /* 1.5 s hold lets the chime + initial element motion register,
+     then the whole overlay — dark background, backdrop-blur, and all
+     elements — dissolves together as gameplay emerges beneath.
+     Visibility snaps quickly once .hidden lands. */
+  transition: opacity 4s ease 1.5s, visibility .4s ease;
+}
+#intro-overlay.intro-exiting .intro-stage {
+  opacity: 0;
+  transition: opacity 4.8s ease;
+}
+#intro-overlay.intro-exiting .intro-card {
+  opacity: 0;
+  transform: translateY(12px) scale(.985);
+  transition: opacity 3.8s ease, transform 3.8s ease;
+}
+#intro-overlay.intro-exiting .vice-title {
+  opacity: 0;
+  animation: none;
+  transform: translateY(8px) rotate(-2deg) scale(calc(var(--vice-scale) * .98));
+  filter: drop-shadow(0 10px 18px rgba(0,0,0,.42)) drop-shadow(0 0 2px rgba(255,255,255,.25));
+  transition: opacity 3.2s ease, transform 3.2s ease, filter 3.2s ease;
+}
+#intro-overlay.intro-exiting .intro-palm {
+  opacity: 0;
+  animation: none;
+  transition: transform 4.2s cubic-bezier(.2,.78,.2,1), opacity 4.2s ease;
+}
+#intro-overlay.intro-exiting .intro-palm.left  { transform: translateX(-18vw); }
+#intro-overlay.intro-exiting .intro-palm.right { transform: translateX(18vw); }
 
 .intro-stage {
   position: absolute; inset: 0; z-index: 3;
@@ -1348,6 +1389,14 @@ body.tt-drawing-active #tt-meter-stage * { pointer-events: auto; }
   transform: translateX(0);
   animation: palmSwayRight 9.2s ease-in-out 0.9s infinite, palmShadePulse 6.4s ease-in-out 0.9s infinite;
 }
+/* Ensure exit choreography overrides logo-visible idle state */
+#intro-overlay.logo-visible.intro-exiting .intro-palm {
+  opacity: 0;
+  animation: none !important;
+  transition: transform 4.2s cubic-bezier(.2,.78,.2,1), opacity 4.2s ease;
+}
+#intro-overlay.logo-visible.intro-exiting .intro-palm.left  { transform: translateX(-18vw); }
+#intro-overlay.logo-visible.intro-exiting .intro-palm.right { transform: translateX(18vw); }
 @keyframes palmSwayLeft {
   0%, 100% { transform: translateX(0) rotate(0deg) scale(1); }
   30% { transform: translateX(0) rotate(-1deg) scale(1.01); }
@@ -1382,6 +1431,14 @@ body.tt-drawing-active #tt-meter-stage * { pointer-events: auto; }
 #intro-overlay.logo-visible .vice-title {
   opacity: .998; transform: translateY(0) rotate(-2deg) scale(var(--vice-scale));
   animation: viceGlowIntro 1.05s ease-out 1, viceGlowIdle 3.2s ease-in-out 1.05s infinite;
+}
+/* Ensure exit choreography overrides logo-visible idle state */
+#intro-overlay.logo-visible.intro-exiting .vice-title {
+  opacity: 0;
+  animation: none !important;
+  transform: translateY(8px) rotate(-2deg) scale(calc(var(--vice-scale) * .98));
+  filter: drop-shadow(0 10px 18px rgba(0,0,0,.42)) drop-shadow(0 0 2px rgba(255,255,255,.25));
+  transition: opacity 3.2s ease, transform 3.2s ease, filter 3.2s ease;
 }
 .vice-title-top {
   margin-left: 4px; font-family: Impact, Haettenschweiler, "Arial Black", sans-serif;
@@ -3439,6 +3496,10 @@ function render(){
     var ttSoundPreviewAudio = null;
     var ttGlobalSoundPanelBuilt = false;
     var ttGlobalPlayerPanelBuilt = false;
+    var introExitInProgress = false;
+    var introExitTimers = [];
+    var introMusicFadeRaf = null;
+    var introMusicFadeToken = 0;
 
     function clamp01(value){
         var n = Number(value);
@@ -3983,6 +4044,12 @@ function render(){
         }
     }
 
+    function clearIntroExitTimers(){
+        while(introExitTimers.length){
+            try { clearTimeout(introExitTimers.pop()); } catch (e) {}
+        }
+    }
+
     function startBackgroundLetterPulse(){
         var gameplay = document.getElementById('gameplay');
         var intro = document.getElementById('intro-overlay');
@@ -3993,7 +4060,7 @@ function render(){
     function stopBackgroundLetterPulse(){
         var gameplay = document.getElementById('gameplay');
         if(!gameplay){ return; }
-        gameplay.classList.remove('tt-bg-letter-pulse');
+        gameplay.classList.remove('tt-bg-letter-pulse', 'tt-bg-letter-pause');
     }
 
     function updateIntroMusicButton(){
@@ -4051,17 +4118,107 @@ function render(){
     }
 
     function stopIntroMusic(){
+        introMusicFadeToken++;
+        if(introMusicFadeRaf){
+            try { cancelAnimationFrame(introMusicFadeRaf); } catch (e) {}
+            introMusicFadeRaf = null;
+        }
         var music = ensureIntroMusic();
         if(!music){ return; }
         try {
             music.pause();
             music.currentTime = 0;
+            applyAudioElementVolume(music, 'introMusic');
             music.muted = false;
             introMusicMuted = false;
             introMusicArmed = false;
             introMusicPrimed = false;
         } catch (e) {}
         updateIntroMusicButton();
+    }
+
+    function fadeOutIntroMusic(durationMs, onDone){
+        var music = ensureIntroMusic();
+        if(!music){
+            if(typeof onDone === 'function'){ onDone(); }
+            return;
+        }
+        introMusicFadeToken++;
+        var token = introMusicFadeToken;
+        if(introMusicFadeRaf){
+            try { cancelAnimationFrame(introMusicFadeRaf); } catch (e) {}
+            introMusicFadeRaf = null;
+        }
+        var initialVolume = 0;
+        try { initialVolume = Number(music.volume) || 0; } catch (e) {}
+        var startedAt = Date.now();
+        function tick(){
+            if(token !== introMusicFadeToken){ return; }
+            var elapsed = Date.now() - startedAt;
+            var t = Math.min(1, elapsed / Math.max(1, durationMs));
+            try {
+                music.volume = Math.max(0, initialVolume * (1 - t));
+            } catch (e) {}
+            if(t < 1){
+                introMusicFadeRaf = requestAnimationFrame(tick);
+                return;
+            }
+            introMusicFadeRaf = null;
+            stopIntroMusic();
+            if(typeof onDone === 'function'){ onDone(); }
+        }
+        introMusicFadeRaf = requestAnimationFrame(tick);
+    }
+
+    function runIntroExitTransition(introEl){
+        var intro = introEl || document.getElementById('intro-overlay');
+        if(!intro || introExitInProgress){ return; }
+        /* ── Centralized timing ─────────────────────────────────────────
+           totalMs         : when .hidden lands (CSS opacity already ~0 by then)
+           gameplayKickoffMs: autoStartGame fires so board renders under dissolve
+           boardRevealMs   : flash anim fires — after overlay fully gone + buffer
+           musicFadeMs     : intro music fade duration
+           overlayFadeMs   : brief gap after .hidden for final cleanup          */
+        var totalMs           = 5500;
+        var gameplayKickoffMs = 4800;
+        var boardRevealMs     = 6100;  /* ~600 ms after overlay gone at 5500 ms */
+        var musicFadeMs       = 3600;
+        var overlayFadeMs     =  300;
+        introExitInProgress = true;
+        clearIntroExitTimers();
+        setIntroSoundPanelOpen(false);
+        setIntroPlayerPanelOpen(false);
+        closeGlobalSoundPanel();
+        closeGlobalPlayerPanel();
+        stopSoundPreview();
+        /* Immediately start clearing gameplay's own blur (5 s dissolve via CSS).
+           Also freeze the board pulse; stop it cleanly after 2 s. */
+        var _gp = document.getElementById('gameplay');
+        if(_gp){ _gp.classList.add('tt-blur-dissolve', 'tt-bg-letter-pause'); }
+        introExitTimers.push(setTimeout(stopBackgroundLetterPulse, 2000));
+        playCorrectSound();
+        intro.classList.add('intro-exiting'); /* CSS fades overlay after 1.5 s hold */
+        fadeOutIntroMusic(musicFadeMs);
+        /* Render the board early so it's fully ready when the overlay finishes
+           dissolving — board is NOT revealed yet, just pre-rendered. */
+        introExitTimers.push(setTimeout(function(){
+            autoStartGame();
+            refreshLayout();
+        }, gameplayKickoffMs));
+        /* Board reveal fires after the overlay is completely gone, giving a clean
+           beat of the sharp board before the cell-flash animation begins. */
+        introExitTimers.push(setTimeout(runBoardRevealEffect, boardRevealMs));
+        /* Add .hidden once the CSS opacity fade has run its course, then clean up */
+        introExitTimers.push(setTimeout(function(){
+            intro.classList.add('hidden');
+            introExitTimers.push(setTimeout(function(){
+                intro.classList.remove('intro-exiting');
+                var gp = document.getElementById('gameplay');
+                if(gp){ gp.classList.remove('tt-blur-dissolve'); }
+                introExitInProgress = false;
+                syncIntroMusic();
+            }, overlayFadeMs));
+        }, totalMs));
     }
 
     function syncIntroMusic(){
@@ -4086,9 +4243,11 @@ function render(){
     function resetIntroSequence(){
         var intro = document.getElementById('intro-overlay');
         clearIntroSequenceTimers();
+        clearIntroExitTimers();
         introSequenceStarted = false;
+        introExitInProgress = false;
         if(intro){
-            intro.classList.remove('sequence-started', 'card-visible', 'logo-visible', 'start-ready');
+            intro.classList.remove('sequence-started', 'card-visible', 'logo-visible', 'start-ready', 'intro-exiting');
         }
         stopBackgroundLetterPulse();
         stopIntroMusic();
@@ -4339,17 +4498,19 @@ var waves = [shuffleArray(even.slice()), shuffleArray(odd.slice())];        var 
             });
         });
 
-        var audio = ensureBoardRevealAudio();
-        if(audio){
-            try {
-                audio.pause();
-                audio.currentTime = 0;
-                var playPromise = audio.play();
-                if(playPromise && typeof playPromise.catch === 'function'){
-                    playPromise.catch(function(){});
-                }
-            } catch (e) {}
-        }
+        boardRevealTimers.push(setTimeout(function(){
+            var audio = ensureBoardRevealAudio();
+            if(audio){
+                try {
+                    audio.pause();
+                    audio.currentTime = 0;
+                    var playPromise = audio.play();
+                    if(playPromise && typeof playPromise.catch === 'function'){
+                        playPromise.catch(function(){});
+                    }
+                } catch (e) {}
+            }
+        }, 500));
     }
 
     function showWrongOverlay(){
@@ -4668,20 +4829,11 @@ var waves = [shuffleArray(even.slice()), shuffleArray(odd.slice())];        var 
             beginIntroSequence();
         });
         document.getElementById("start-game-btn").addEventListener("click", function(){
+            if(introExitInProgress){ return; }
             ensureAudio();
-            stopIntroMusic();
-            stopBackgroundLetterPulse();
-            setIntroSoundPanelOpen(false);
-            setIntroPlayerPanelOpen(false);
-            closeGlobalSoundPanel();
-            closeGlobalPlayerPanel();
             state.introSeen = true;
             saveState();
-            autoStartGame();
-            intro.classList.add("hidden");
-            syncIntroMusic();
-            refreshLayout();
-            setTimeout(runBoardRevealEffect, 140);
+            runIntroExitTransition(intro);
         });
         var introSoundMuteBtn = document.getElementById("intro-sound-mute-btn");
         if(introSoundMuteBtn){
