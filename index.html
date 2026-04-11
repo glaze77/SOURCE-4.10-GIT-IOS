@@ -1371,13 +1371,13 @@ body.tt-drawing-active #tt-meter-stage * { pointer-events: auto; }
   .intro-btn.primary { min-width: 132px; }
   .load-btn { min-width: 120px; font-size: 15px; padding: 8px 14px; }
 
-  /* Vice-title: sits in the left margin beside the narrower card */
-  .vice-title { left: 10px; bottom: 8px; width: min(16vw, 98px); }
-  .vice-title-top { font-size: clamp(20px, 3vh, 32px); }
-  .vice-title-bottom { font-size: clamp(30px, 5vh, 52px); margin-top: -6px; }
+  /* Vice-title: fills the left margin clearly */
+  .vice-title { left: 10px; bottom: 10px; width: min(20vw, 112px); }
+  .vice-title-top { font-size: clamp(22px, 3.5vh, 36px); }
+  .vice-title-bottom { font-size: clamp(34px, 5.5vh, 56px); margin-top: -7px; }
 
-  /* Palms: wider reveal now that card is narrower */
-  .intro-palm { height: min(86vh, 390px); max-width: 22vw; }
+  /* Palms: full-height — bottom offset is -2vh so 104vh closes the gap and bleeds to the top edge */
+  .intro-palm { height: 104vh; max-width: 26vw; }
 
   /* Game board: tighter padding/gaps and smaller category header row */
   .grid { padding: 8px; gap: 6px; }
