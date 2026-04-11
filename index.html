@@ -77,16 +77,14 @@ h3, .point-cell {
     background-color:rgba(0,0,0,.5);
     display:none;
     position:fixed;
-    top:0;
-    left:0;
-    right:0;
-    bottom:0;
+    top:var(--stage-top);
+    left:var(--stage-left);
+    right:auto;
+    bottom:auto;
     z-index:2;
-    width:100%;
-    height:100%;
-    min-height:100vh;
-    min-height:100svh;
-    min-height:100dvh;
+    width:var(--stage-width);
+    height:var(--stage-height);
+    min-height:var(--stage-height);
 }
 
 .modal {
@@ -2508,7 +2506,7 @@ body::before {
     display: flex;
     align-items: flex-start;
     justify-content: center;
-    min-height: calc(var(--vvh) - max(48px, env(safe-area-inset-top, 0px)) - max(48px, env(safe-area-inset-bottom, 0px)));
+    min-height: calc(var(--stage-height) - max(48px, env(safe-area-inset-top, 0px)) - max(48px, env(safe-area-inset-bottom, 0px)));
     padding: 24px 0 max(120px, env(safe-area-inset-bottom, 0px));
 }
 .intro-load-veil {
@@ -3120,17 +3118,20 @@ body::before {
 }
 .intro-palms {
     position: fixed;
-    inset: 0;
+    left: var(--stage-left);
+    top: var(--stage-top);
+    width: var(--stage-width);
+    height: var(--stage-height);
     z-index: 2;
     pointer-events: none;
     overflow: hidden;
 }
 .intro-palm {
-    position: fixed;
-    bottom: -2vh;
+    position: absolute;
+    bottom: -2%;
     width: auto;
-    height: min(82vh, 900px);
-    max-width: 46vw;
+    height: min(82%, 900px);
+    max-width: 46%;
     object-fit: contain;
     object-position: bottom center;
     opacity: 0;
@@ -3138,12 +3139,12 @@ body::before {
     transition: transform 1.8s cubic-bezier(.16,.84,.24,1), opacity 1.8s ease-out;
 }
 .intro-palm.left {
-    left: -4vw;
-    transform: translateX(-18vw);
+    left: -4%;
+    transform: translateX(-18%);
 }
 .intro-palm.right {
-    right: -4vw;
-    transform: translateX(18vw);
+    right: -4%;
+    transform: translateX(18%);
 }
 #intro-overlay.logo-visible .intro-palm {
     opacity: .78;
@@ -3161,15 +3162,15 @@ body::before {
 /* ===== VICE TITLE BASE ===== */
 .vice-title {
     position: fixed;
-    left: 42px;
-    bottom: 64px;
+    left: calc(var(--stage-left) + 42px);
+    bottom: calc(var(--stage-bottom-gap) + 64px);
     top: auto;
     z-index: 14001;
 
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    width: min(44vw, 770px);
+    width: min(calc(var(--stage-width) * 0.44), 770px);
 
     pointer-events: none;
     user-select: none;
@@ -3299,14 +3300,14 @@ body::before {
             max(12px, env(safe-area-inset-left, 0px));
     }
     .intro-stage {
-        min-height: calc(var(--vvh) - max(32px, env(safe-area-inset-top, 0px)) - max(32px, env(safe-area-inset-bottom, 0px)));
+        min-height: calc(var(--stage-height) - max(32px, env(safe-area-inset-top, 0px)) - max(32px, env(safe-area-inset-bottom, 0px)));
         padding: 12px 0 max(112px, env(safe-area-inset-bottom, 0px));
     }
     .intro-card {
         padding: 18px 16px 16px;
         border-radius: 22px;
     }
-    .intro-palm { height: min(74vh, 760px); max-width: 54vw; }
+    .intro-palm { height: min(74%, 760px); max-width: 54%; }
     .intro-card h1 { font-size: 34px; }
     .intro-copy { font-size: 16px; }
     .intro-copy-media.hand img { max-width: min(100%, 220px); }
@@ -3337,7 +3338,7 @@ body::before {
         text-align: left;
     }
     .load-btn { min-width: 160px; font-size: 19px; padding: 14px 22px; }
-    .vice-title { top: 34px; left: 8px; width: min(50vw, 360px); }
+    .vice-title { top: calc(var(--stage-top) + 34px); bottom: auto; left: calc(var(--stage-left) + 8px); width: min(calc(var(--stage-width) * 0.5), 360px); }
     .vice-title-top { margin-left: 0; font-size: clamp(46px, 9vw, 76px); }
     .vice-title-bottom { font-size: clamp(78px, 18vw, 120px); margin-left: 6px; }
 }
@@ -6720,6 +6721,17 @@ to { transform: rotate(360deg); }
 #question-modal::before,
 #tt-clue-splash-overlay::before {
   inset: 0;
+}
+
+.tt-lightbox img {
+  max-width: min(calc(var(--stage-width) - 48px), 1600px);
+  max-height: calc(var(--stage-height) - 48px);
+}
+
+#tools-hub {
+  top: calc(var(--stage-top) + 18px) !important;
+  right: calc(var(--stage-right-gap) + 18px) !important;
+  left: auto !important;
 }
 
 body::before {
