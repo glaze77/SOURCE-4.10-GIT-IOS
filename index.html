@@ -426,6 +426,41 @@ kbd {
 .grid-cell.tt-board-intro-flash .cell,
 .grid-cell.tt-board-intro-flash .cell-group,
 .grid-cell.tt-board-intro-flash .cell-inner { animation: ttBoardIntroGlow .34s ease-out both; }
+
+/* During checker reveal, keep board values dark unless the active flash tile lights them.
+   Category headers stay hidden until the user clicks them after the reveal completes. */
+#gameplay.tt-board-reveal-mode .grid-row-questions .cell-inner {
+  color: rgba(255,255,255,0) !important;
+  text-shadow: none !important;
+  filter: brightness(.78);
+  opacity: .14;
+}
+#gameplay.tt-board-reveal-mode .grid-row-questions .grid-cell.tt-board-intro-flash .cell-inner {
+  color: #fff !important;
+  text-shadow: 0 0 14px rgba(255,255,255,.88), 0 0 30px rgba(255,255,255,.42);
+  filter: brightness(2.1);
+  opacity: 1;
+}
+#gameplay.tt-board-reveal-mode .grid-row-cats .cat-cell {
+  color: transparent !important;
+  text-shadow: none !important;
+  opacity: 0;
+}
+.grid-row-cats .cat-cell.tt-topic-hidden {
+  color: transparent !important;
+  text-shadow: none !important;
+  opacity: 0;
+}
+.grid-row-cats .cat-cell.tt-topic-hidden.tt-topic-reveal-ready {
+  cursor: pointer;
+}
+.grid-row-cats .cat-cell.tt-topic-hidden.tt-topic-reveal-ready:hover {
+  filter: brightness(1.08);
+}
+.grid-row-cats .cat-cell.tt-topic-revealed {
+  opacity: 1;
+}
+
 @keyframes ttBoardIntroFlash {
   0%   { filter: brightness(1) saturate(1); }
   35%  { filter: brightness(1.28) saturate(1.14); }
@@ -2579,6 +2614,21 @@ if (CLEAN_MODE) {
             return null;
         }
 
+        function restoreInertQuestionsFromState(old_state){
+            if(!old_state || !old_state.inerts){ return; }
+            var inerts = old_state.inerts;
+            for(var id in inerts){
+                try {
+                    var cell = document.getElementById(id);
+                    if(!cell){ continue; }
+                    cell.classList.add("inert");
+                    cell.setAttribute("aria-label", "Answered");
+                } catch (e) {
+                    continue;
+                }
+            }
+        }
+
         function clearState(){
             try {
                 localStorage.removeItem("classroom-jeopardy-board-v1");
@@ -2608,6 +2658,7 @@ if (CLEAN_MODE) {
             }
             resize();
             renderState(initial_state);
+            restoreInertQuestionsFromState(getOldState());
             try { document.querySelectorAll(".grid-first-row .grid-cell")[0].focus(); } catch(e) {}
 
             var active_team_number = 0;
@@ -2760,7 +2811,10 @@ if (CLEAN_MODE) {
 
             var debouncedSaveState = debounce(function(){
                 try {
-                    localStorage.setItem("game-6429266", JSON.stringify(getCurrentState()))
+                    var snapshot = JSON.stringify(getCurrentState());
+                    localStorage.setItem("classroom-jeopardy-board-v1", snapshot);
+                    /* Keep legacy key in sync for backward compatibility. */
+                    localStorage.setItem("game-6429266", snapshot);
                 } catch (e) {
 
                 }
@@ -2934,15 +2988,7 @@ if (CLEAN_MODE) {
                 }
 
                 // restore the inert questions
-                var inerts = old_state.inerts;
-                for(var id in inerts){
-                    try {
-                        document.getElementById(id).classList.add("inert");
-                        document.getElementById(id).setAttribute("aria-label", "Answered");
-                    } catch (e) {
-                        continue;
-                    }
-                }
+                restoreInertQuestionsFromState(old_state);
             }
         } else if(clear){
             for(var i = 0; i < val; i++){
@@ -3294,7 +3340,9 @@ if (CLEAN_MODE) {
                         soundEnabled: parsed.soundEnabled !== false,
                         rankAnimatedByTier: parsed.rankAnimatedByTier && typeof parsed.rankAnimatedByTier === "object" ? parsed.rankAnimatedByTier : {},
                         lockedWinnerIndex: typeof parsed.lockedWinnerIndex === "number" ? parsed.lockedWinnerIndex : null,
-                        lockCelebrated: !!parsed.lockCelebrated
+                        lockCelebrated: !!parsed.lockCelebrated,
+                        streakPlayerIndex: typeof parsed.streakPlayerIndex === "number" ? parsed.streakPlayerIndex : null,
+                        streakCount: Number(parsed.streakCount) > 0 ? Number(parsed.streakCount) : 0
                     };
                 }
             }
@@ -3306,7 +3354,9 @@ if (CLEAN_MODE) {
             soundEnabled: true,
             rankAnimatedByTier: {},
             lockedWinnerIndex: null,
-            lockCelebrated: false
+            lockCelebrated: false,
+            streakPlayerIndex: null,
+            streakCount: 0
         };
     }
 
@@ -3672,6 +3722,11 @@ function render(){
     }
     var ttSoundState = { activeClueId: null, revealPlayedForClue: null, dailyDoublePlayedForClue: null };
     var ttAudioCache = {};
+    var ttStreakSoundAssets = {
+        heatingUp: "media/Audio/hes-heating-up.mp3",
+        onFire: "media/Audio/hes-on-fire_h9DW1bE.mp3"
+    };
+    var ttStreakAudioCache = {};
     var ttVolumeStorageKey = 'transfer-trivia-volume-v3';
     var ttVolumeDefaults = {
         introMusic: 1,
@@ -4221,6 +4276,39 @@ function render(){
         }
     }
 
+    function ensureStreakAudioAsset(kind){
+        var src = ttStreakSoundAssets[kind];
+        if(!src){ return null; }
+        if(!ttStreakAudioCache[kind]){
+            try {
+                var resolvedSrc = src;
+                try { resolvedSrc = new URL(src, window.location.href).href; } catch (e) {}
+                var audio = new Audio();
+                audio.preload = "auto";
+                audio.src = resolvedSrc;
+                audio.load();
+                ttStreakAudioCache[kind] = audio;
+            } catch (e) {
+                return null;
+            }
+        }
+        return ttStreakAudioCache[kind] || null;
+    }
+
+    function playStreakSound(kind){
+        var audio = ensureStreakAudioAsset(kind);
+        if(!audio){ return; }
+        try {
+            audio.pause();
+            audio.currentTime = 0;
+            audio.volume = getAudioVolumeForKind("correct");
+            var playPromise = audio.play();
+            if(playPromise && typeof playPromise.catch === "function"){
+                playPromise.catch(function(){});
+            }
+        } catch (e) {}
+    }
+
     function ensureIntroMusic(){
         if(introMusic){ return introMusic; }
         var el = document.getElementById('intro-theme-audio');
@@ -4629,11 +4717,54 @@ function render(){
     var boardRevealPlayed = false;
     var boardRevealTimers = [];
     var boardRevealAudio = null;
+    var topicRevealEnabled = false;
 
     function clearBoardRevealTimers(){
         while(boardRevealTimers.length){
             try { clearTimeout(boardRevealTimers.pop()); } catch (e) {}
         }
+    }
+
+    function markTopicsHiddenForReveal(){
+        topicRevealEnabled = false;
+        var gameplay = document.getElementById('gameplay');
+        if(gameplay){
+            gameplay.classList.add('tt-board-reveal-mode');
+        }
+        var topics = document.querySelectorAll('.grid-row-cats .cat-cell');
+        for(var i = 0; i < topics.length; i++){
+            topics[i].classList.add('tt-topic-hidden');
+            topics[i].classList.remove('tt-topic-revealed', 'tt-topic-reveal-ready');
+        }
+    }
+
+    function enableTopicRevealClicks(){
+        var gameplay = document.getElementById('gameplay');
+        if(gameplay){
+            gameplay.classList.remove('tt-board-reveal-mode');
+        }
+        topicRevealEnabled = true;
+        var topics = document.querySelectorAll('.grid-row-cats .cat-cell.tt-topic-hidden');
+        for(var i = 0; i < topics.length; i++){
+            topics[i].classList.add('tt-topic-reveal-ready');
+        }
+    }
+
+    function revealTopicCell(catCell){
+        if(!catCell || !catCell.classList.contains('tt-topic-hidden')){ return; }
+        catCell.classList.remove('tt-topic-hidden', 'tt-topic-reveal-ready');
+        catCell.classList.add('tt-topic-revealed');
+    }
+
+    function bindTopicRevealEvents(){
+        if(document.__ttTopicRevealBound){ return; }
+        document.addEventListener('click', function(e){
+            if(!topicRevealEnabled){ return; }
+            var topicCell = e.target && e.target.closest ? e.target.closest('.grid-row-cats .cat-cell') : null;
+            if(!topicCell){ return; }
+            revealTopicCell(topicCell);
+        }, true);
+        document.__ttTopicRevealBound = true;
     }
 
     function ensureBoardRevealAudio(){
@@ -4663,6 +4794,7 @@ function render(){
 
         boardRevealPlayed = true;
         clearBoardRevealTimers();
+        markTopicsHiddenForReveal();
 
         var even = [];
         var odd = [];
@@ -4688,9 +4820,11 @@ function render(){
             } catch (e) {}
         }
 
-var waves = [shuffleArray(even.slice()), shuffleArray(odd.slice())];        var baseDelay = 170;
+        var waves = [shuffleArray(even.slice()), shuffleArray(odd.slice())];
+        var baseDelay = 170;
         var waveGap = 133;
         var animOffset = 500;
+        var longestWave = Math.max(waves[0].length, waves[1].length);
         waves.forEach(function(group, waveIndex){
             group.forEach(function(cell, cellIndex){
                 var startDelay = animOffset + waveIndex * waveGap + cellIndex * baseDelay;
@@ -4704,6 +4838,12 @@ var waves = [shuffleArray(even.slice()), shuffleArray(odd.slice())];        var 
                 }, startDelay));
             });
         });
+        if(longestWave > 0){
+            var revealDoneMs = animOffset + waveGap + ((longestWave - 1) * baseDelay) + 400;
+            boardRevealTimers.push(setTimeout(enableTopicRevealClicks, revealDoneMs));
+        } else {
+            enableTopicRevealClicks();
+        }
     }
 
     function showWrongOverlay(){
@@ -4719,6 +4859,8 @@ var waves = [shuffleArray(even.slice()), shuffleArray(odd.slice())];        var 
     }
 
     function playWrongSound(){
+        resetCorrectStreak();
+        saveState();
         playAudioAsset('wrong');
         showWrongOverlay();
     }
@@ -4728,6 +4870,29 @@ var waves = [shuffleArray(even.slice()), shuffleArray(odd.slice())];        var 
         playAudioAsset('dailyDouble');
     }
 
+    function resetCorrectStreak(){
+        state.streakPlayerIndex = null;
+        state.streakCount = 0;
+    }
+
+    function applyCorrectStreak(playerIndex){
+        var currentStreakPlayer = typeof state.streakPlayerIndex === "number" ? state.streakPlayerIndex : null;
+        var currentStreakCount = Number(state.streakCount) > 0 ? Number(state.streakCount) : 0;
+
+        if(currentStreakPlayer !== playerIndex){
+            state.streakPlayerIndex = playerIndex;
+            state.streakCount = 1;
+            return;
+        }
+
+        state.streakCount = currentStreakCount + 1;
+        if(state.streakCount === 2){
+            playStreakSound("heatingUp");
+        } else if(state.streakCount === 3){
+            playStreakSound("onFire");
+        }
+    }
+
     function updateSoundUI(){
         var btn = document.getElementById("sound-toggle-btn");
         if(btn){
@@ -4735,15 +4900,27 @@ var waves = [shuffleArray(even.slice()), shuffleArray(odd.slice())];        var 
         }
     }
 
+    function persistLockedCellsForRefresh(){
+        try {
+            if(typeof getCurrentState !== "function"){ return; }
+            var snapshot = JSON.stringify(getCurrentState());
+            localStorage.setItem("classroom-jeopardy-board-v1", snapshot);
+            localStorage.setItem("game-6429266", snapshot);
+        } catch (e) {}
+    }
+
     function applyDelta(playerIndex, delta){
         lastAction = {
             playerIndex: playerIndex,
             prevScore: state.players[playerIndex].score,
             prevLastUpdated: state.lastUpdated,
-            clueId: getCurrentClueId()
+            clueId: getCurrentClueId(),
+            prevStreakPlayerIndex: typeof state.streakPlayerIndex === "number" ? state.streakPlayerIndex : null,
+            prevStreakCount: Number(state.streakCount) > 0 ? Number(state.streakCount) : 0
         };
         state.players[playerIndex].score += delta;
         state.lastUpdated = playerIndex;
+        applyCorrectStreak(playerIndex);
 
         var activeQuestion = document.querySelector(".active-question");
         if(activeQuestion){
@@ -4752,6 +4929,7 @@ var waves = [shuffleArray(even.slice()), shuffleArray(odd.slice())];        var 
             try {
                 if(typeof debouncedSaveState === "function"){ debouncedSaveState(); }
             } catch (e) {}
+            persistLockedCellsForRefresh();
         }
         saveState();
         render();
@@ -4761,6 +4939,8 @@ var waves = [shuffleArray(even.slice()), shuffleArray(odd.slice())];        var 
         if(!lastAction){ return; }
         state.players[lastAction.playerIndex].score = lastAction.prevScore;
         state.lastUpdated = lastAction.prevLastUpdated;
+        state.streakPlayerIndex = typeof lastAction.prevStreakPlayerIndex === "number" ? lastAction.prevStreakPlayerIndex : null;
+        state.streakCount = Number(lastAction.prevStreakCount) > 0 ? Number(lastAction.prevStreakCount) : 0;
         lastAction = null;
         saveState();
         render();
@@ -4774,6 +4954,7 @@ var waves = [shuffleArray(even.slice()), shuffleArray(odd.slice())];        var 
         state.lastUpdated = null;
         state.lockedWinnerIndex = null;
         state.lockCelebrated = false;
+        resetCorrectStreak();
         lastAction = null;
         hideVictoryLockBanner();
         saveState();
@@ -4816,7 +4997,9 @@ var waves = [shuffleArray(even.slice()), shuffleArray(odd.slice())];        var 
         soundEnabled: soundEnabled !== false,
         rankAnimatedByTier: {},
         lockedWinnerIndex: null,
-        lockCelebrated: false
+        lockCelebrated: false,
+        streakPlayerIndex: null,
+        streakCount: 0
     };
     lastAction = null;
     hideVictoryLockBanner();
@@ -5047,6 +5230,7 @@ var waves = [shuffleArray(even.slice()), shuffleArray(odd.slice())];        var 
         }
         bindIntroSoundPanelEvents();
         bindIntroPlayerPanelEvents();
+        bindTopicRevealEvents();
         updateIntroSoundPanelUI();
         setIntroSoundPanelOpen(false);
         updateIntroPlayerPanelUI();
