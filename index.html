@@ -1336,23 +1336,23 @@ body.tt-drawing-active #tt-meter-stage * { pointer-events: auto; }
 
 /* ─── Landscape mobile: PC-like 16:9 layout ─── */
 @media (orientation: landscape) and (max-height: 500px) {
-  /* Shrink the bottom-bar reservation so the board fills the viewport like PC */
-  :root { --app-bottom-bar-h: 140px; }
+  /* Shrink the bottom-bar reservation — scoreboard is now one compact row */
+  :root { --app-bottom-bar-h: 68px; }
 
-  /* Scoreboard: compact single-pass fit for short landscape height */
-  .scoreboard-shell { padding: 4px 10px 5px; }
-  .scoreboard-grid { gap: 5px; }
+  /* Scoreboard: single row of 8 across the bottom */
+  .scoreboard-shell { padding: 3px 8px 4px; }
+  .scoreboard-grid { grid-template-columns: repeat(8, minmax(0,1fr)); gap: 4px; }
   .score-entry {
-    grid-template-columns: 28px minmax(0,1fr) 36px;
-    padding: 4px 6px 3px;
+    grid-template-columns: 20px minmax(0,1fr) 26px;
+    padding: 3px 4px 2px;
     row-gap: 3px;
-    border-radius: 9px;
+    border-radius: 8px;
   }
-  .score-value { font-size: 18px; min-height: 18px; padding-top: 0; }
-  .score-undo { width: 26px; height: 24px; border-radius: 7px; font-size: 12px; }
-  .score-add-wrap { width: 36px; height: 24px; }
-  .score-add-btn { width: 36px; height: 24px; border-radius: 7px; font-size: 13px; }
-  .score-name { padding: 4px 6px; font-size: 11px; border-radius: 7px; }
+  .score-value { font-size: 14px; min-height: 14px; padding-top: 0; }
+  .score-undo { width: 18px; height: 20px; border-radius: 6px; font-size: 11px; }
+  .score-add-wrap { width: 26px; height: 20px; }
+  .score-add-btn { width: 26px; height: 20px; border-radius: 6px; font-size: 12px; }
+  .score-name { padding: 3px 5px; font-size: 10px; border-radius: 6px; }
 
   /* Intro card: override height-based queries, match PC centered look */
   .intro-copy-media { display: flex; margin: 3px 0 1px; }
@@ -1381,7 +1381,7 @@ body.tt-drawing-active #tt-meter-stage * { pointer-events: auto; }
   .grid-row { gap: 6px; }
   .grid-cell { border-radius: 12px; }
   .grid-row-cats .grid-cell { min-height: 0; }
-  .grid-row-cats .cell-inner { min-height: 48px; font-size: clamp(10px, 2vh, 18px); padding: 6px 8px; }
+  .grid-row-cats .cell-inner { min-height: 46px; font-size: clamp(10px, 1.5vw, 14px); padding: 5px 7px; }
 
   /* Answer panel text: reduce min font floors for the short viewport */
   .tt-answer-part { padding: 8px 10px; border-radius: 12px; }
@@ -2156,7 +2156,7 @@ function miniresize(grid, cells, is_cats, scale_factor){
         cat.classList.remove("grid-row-cats-resize-done")
         cat.style.height = "auto";
         var max_height = 0;
-        var min_cat_height = 92;
+        var min_cat_height = (window.innerWidth > window.innerHeight && window.innerHeight < 550) ? 46 : 92;
         var cat_height_pad = 10;
         for(var i = 0; i < cells.length; i++){
             var cell = cells[i];
