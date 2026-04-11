@@ -2847,6 +2847,7 @@ if (CLEAN_MODE) {
                 $points.innerText = points + val;
                 if(active_question){
                     document.querySelectorAll(".active-question")[0].classList.add("inert");
+                    document.querySelectorAll(".active-question")[0].setAttribute("aria-label", "Answered");
                 }
                 debouncedSaveState();
 
@@ -3101,12 +3102,8 @@ if (CLEAN_MODE) {
             q.classList.add("reveal");
         }, 0)
 
-        document.querySelectorAll(".active-question")[0].classList.add("inert");
+        // Do not lock the clue on reveal; lock only when points are awarded.
         //document.querySelectorAll('#question-modal .question')[0].focus();
-
-        if(current_cell){
-            current_cell.setAttribute("aria-label", "Answered");
-        }
 
         autoplay('#question-modal .question')
     }
@@ -5463,16 +5460,6 @@ window.transferTriviaDeck = {};
     '</div>';
   }
 
-  function markCurrentAnswered() {
-    var activeQuestion = document.querySelector(".active-question");
-    if (activeQuestion) {
-      activeQuestion.classList.add("inert");
-      activeQuestion.setAttribute("aria-label", "Answered");
-    }
-    try {
-      if (typeof debouncedSaveState === "function") debouncedSaveState();
-    } catch (e) {}
-  }
   var TT_LAYOUT_KEY = "ttQALayoutV1";
   var TT_LAYOUT_STORE_KEY = "ttQALayoutStoreV1";
   var TT_EMBEDDED_LAYOUTS = {
@@ -6406,7 +6393,6 @@ window.transferTriviaDeck = {};
       fitQuestionTextInModal();
       fitAnswerTextInModal();
     });
-    markCurrentAnswered();
     var answerPart = modalEl.querySelector(".tt-answer-part");
     if (answerPart) {
       setTimeout(function() {
