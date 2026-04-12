@@ -428,6 +428,26 @@ kbd {
 .grid-cell.tt-board-intro-flash .cell,
 .grid-cell.tt-board-intro-flash .cell-group,
 .grid-cell.tt-board-intro-flash .cell-inner { animation: ttBoardIntroGlow .34s ease-out both; }
+/* Override inert-cell dimming during flash so the wave shows on fully-answered boards */
+.grid-cell.tt-board-intro-flash .cell-group.inert { filter: brightness(4.0) saturate(1.4) !important; }
+.grid-cell.tt-board-intro-flash .inert .cell-inner { opacity: 1 !important; }
+
+/* Finale paparazzi board flash — sharp white camera-burst directly on the cell.
+   Works on fully-answered (inert) boards because it targets the cell itself.
+   Fast peak at 10% then quick decay = press-pit camera flash feel. */
+.grid-cell.tt-finale-board-flash { animation: ttPaparazziFlash .42s ease-out both; }
+@keyframes ttPaparazziFlash {
+  0%   { background: rgba(255,255,255,0);
+         box-shadow: none; }
+  10%  { background: rgba(255,255,255,0.92);
+         box-shadow: 0 0 0 3px rgba(255,255,255,1),
+                     0 0 22px rgba(255,255,255,1),
+                     0 0 55px rgba(255,255,255,0.75),
+                     0 0 100px rgba(220,230,255,0.45),
+                     inset 0 0 18px rgba(255,255,255,0.95); }
+  100% { background: rgba(255,255,255,0);
+         box-shadow: none; }
+}
 
 /* During checker reveal, keep board values dark unless the active flash tile lights them.
    Category headers stay hidden until the user clicks them after the reveal completes. */
@@ -6235,36 +6255,83 @@ function ensureBoardTextVisibleDuringGameplay(){
         var cells = Array.prototype.slice.call(document.querySelectorAll(
             '.grid-row-cats .grid-cell, .grid-row-questions .grid-cell'));
         if(!cells.length){ return; }
-        var even = [], odd = [];
-        cells.forEach(function(cell){
-            var row = parseInt(cell.getAttribute('data-row') || '0', 10);
-            var col = parseInt(cell.getAttribute('data-col') || '0', 10);
-            ((row + col) % 2 === 0 ? even : odd).push(cell);
-        });
-        /* Match intro sequence pacing: stagger start + slow per-cell cadence */
-        var animOffset = 320;   /* brief pause before first cell lights — creates suspense */
-        var baseDelay  = 160;   /* ms per cell — matches intro's 170ms sweep */
-        var waveGap    = 128;   /* ms between checker waves */
+
+        /* Paparazzi light show — 4 rapid rounds of random camera-flash bursts.
+           Cells fire 30ms apart within each round (chaotic/overlapping feel),
+           rounds spaced 650ms apart.  Total ≈ 100 + 3×650 + cells×30 ≈ 2950ms,
+           safely before the scene overlay is injected at 3100ms. */
+        var ROUNDS     = 4;
+        var CELL_GAP   = 30;   /* ms between cells within a round — fast & overlapping */
+        var ROUND_GAP  = 650;  /* ms between round starts */
+        var START      = 100;  /* initial delay before first flash */
+        var FLASH_DUR  = 440;  /* ms — matches animation duration + small buffer */
+
         var audio = ensureBoardRevealAudio();
         if(audio){
             try { audio.pause(); audio.currentTime = 0;
                 var ap = audio.play(); if(ap && ap.catch){ ap.catch(function(){}); }
             } catch(e){}
         }
-        var waves = [shuffleArray(even.slice()), shuffleArray(odd.slice())];
-        waves.forEach(function(group, wi){
-            group.forEach(function(cell, ci){
-                var d = animOffset + wi * waveGap + ci * baseDelay;
-                finaleTimers.push(setTimeout(function(){
-                    cell.classList.remove('tt-board-intro-flash');
-                    void cell.offsetWidth;
-                    cell.classList.add('tt-board-intro-flash');
+
+        for(var r = 0; r < ROUNDS; r++){
+            (function(round){
+                var shuffled = shuffleArray(cells.slice());
+                shuffled.forEach(function(cell, i){
+                    var d = START + round * ROUND_GAP + i * CELL_GAP;
                     finaleTimers.push(setTimeout(function(){
-                        cell.classList.remove('tt-board-intro-flash');
-                    }, 340));
-                }, d));
-            });
-        });
+                        cell.classList.remove('tt-finale-board-flash');
+                        void cell.offsetWidth;   /* force reflow → restart animation */
+                        cell.classList.add('tt-finale-board-flash');
+                        finaleTimers.push(setTimeout(function(){
+                            cell.classList.remove('tt-finale-board-flash');
+                        }, FLASH_DUR));
+                    }, d));
+                });
+            })(r);
+        }
+    }
+
+    /* Repeating intro-style checker-wave glow played through the blur overlay.
+       Uses tt-board-intro-flash (same brightness/glow as the intro reveal) so it
+       reads as a warm pulsing light behind the frosted glass.  No audio. */
+    function runBehindBlurBoardFlash(){
+        var cells = Array.prototype.slice.call(document.querySelectorAll(
+            '.grid-row-cats .grid-cell, .grid-row-questions .grid-cell'));
+        if(!cells.length){ return; }
+
+        var PASSES     = 3;
+        var animOffset = 200;   /* ms before first cell fires in each pass */
+        var baseDelay  = 140;   /* ms between cells within a wave */
+        var waveGap    = 110;   /* ms between even/odd checker waves */
+        /* Duration of one full pass: offset + gap + all cells + anim tail */
+        var passDur    = animOffset + waveGap + (Math.ceil(cells.length / 2) - 1) * baseDelay + 380;
+        var passGap    = passDur + 320;   /* start-to-start spacing between passes */
+
+        for(var p = 0; p < PASSES; p++){
+            (function(pass){
+                var even = [], odd = [];
+                cells.forEach(function(cell){
+                    var row = parseInt(cell.getAttribute('data-row') || '0', 10);
+                    var col = parseInt(cell.getAttribute('data-col') || '0', 10);
+                    ((row + col) % 2 === 0 ? even : odd).push(cell);
+                });
+                /* Shuffle each pass independently so no two passes look identical */
+                var waves = [shuffleArray(even.slice()), shuffleArray(odd.slice())];
+                waves.forEach(function(group, wi){
+                    group.forEach(function(cell, ci){
+                        var d = pass * passGap + animOffset + wi * waveGap + ci * baseDelay;
+                        finaleTimers.push(setTimeout(function(){
+                            cell.classList.remove('tt-board-intro-flash');
+                            void cell.offsetWidth;
+                            cell.classList.add('tt-board-intro-flash');
+                            finaleTimers.push(setTimeout(function(){
+                                cell.classList.remove('tt-board-intro-flash');
+                            }, 333));
+                        }, d));
+                    });
+                });
+            })(p);
+        }
     }
 
     function runFinaleSequence(){
@@ -6290,10 +6357,14 @@ function ensureBoardTextVisibleDuringGameplay(){
         /* Intro theme as a finale bed */
         startIntroMusicForFinale(180);
 
-        /* ── Step 1: board intro light sequence (checker wave flash) ── */
-        finaleTimers.push(setTimeout(function(){ runFinaleBoardFlash(); }, 200));
+        /* ── Step 1: board checker-wave flash — runs immediately on bare board.
+           IMPORTANT: the scene overlay must NOT be in the DOM yet, otherwise its
+           backdrop-filter:blur() would obscure the flash even at opacity:0.
+           Flash duration ≈ animOffset(320) + waveGap(128) + cells*baseDelay(160)
+           ≈ 3050ms for a full board → inject scene at 3100ms, safely after. ── */
+        runFinaleBoardFlash();
 
-        /* ── Step 2: Build the unified finale scene ─────────────────── */
+        /* ── Step 2: Build scene in memory — append to DOM only after flash ── */
         var oldScene = document.getElementById('tt-finale-scene');
         if(oldScene){ oldScene.parentNode.removeChild(oldScene); }
 
@@ -6348,9 +6419,13 @@ function ensureBoardTextVisibleDuringGameplay(){
         });
         scene.appendChild(stage);
 
-        document.body.appendChild(scene);
+        /* Inject scene after board flash completes (~3050ms), giving it 200ms
+           of breathing room before the backdrop transition begins at 3300ms. */
+        finaleTimers.push(setTimeout(function(){
+            document.body.appendChild(scene);
+        }, 3100));
 
-        /* ── Step 3: fade in backdrop while sliding in palms — after board flash ── */
+        /* ── Step 3: fade in backdrop while sliding in palms ── */
         finaleTimers.push(setTimeout(function(){
             backdrop.classList.add('tt-fb-in');
             palmL.classList.add('tt-fp-in');
@@ -6375,8 +6450,17 @@ function ensureBoardTextVisibleDuringGameplay(){
             }, podiumBase + s.riseDelay));
         });
 
+        /* ── Step 5b: intro-style checker-wave glow through the blur backdrop.
+           Fires once all podiums have finished rising (last: 5200+760+1550≈7510ms).
+           Uses tt-board-intro-flash so it matches the intro reveal pattern exactly,
+           but NO audio.  Repeats 3 times as a warm celebratory pulse behind the
+           frosted overlay. ── */
+        finaleTimers.push(setTimeout(function(){
+            runBehindBlurBoardFlash();
+        }, 7700));
+
         /* ── Step 6: participation badges (4th+ players) ─────────────── */
-        finaleTimers.push(setTimeout(function(){  /* delay aligned with podium rise */
+        finaleTimers.push(setTimeout(function(){
             others.forEach(function(player, i){
                 var card = document.querySelector('.score-entry[data-player-index="' + player.index + '"]');
                 if(!card){ return; }
