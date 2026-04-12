@@ -1004,6 +1004,35 @@ kbd {
 .score-undo:disabled { opacity: .55; }
 .score-entry.controls-hidden .score-undo,
 .score-entry.controls-hidden .score-add-wrap { visibility: hidden; pointer-events: none; }
+/* ── Video-game floating score pop ──────────────────────────────────────────
+   Spawned via spawnScorePop(). Positioned fixed over the score-value element,
+   floats upward, scales slightly on exit, then removes itself. ── */
+@keyframes ttScorePopFloat {
+  0%   { opacity: 1;   transform: translateX(-50%) translateY(0)    scale(1);    }
+  18%  { opacity: 1;   transform: translateX(-50%) translateY(-12px) scale(1.22); }
+  100% { opacity: 0;   transform: translateX(-50%) translateY(-62px) scale(0.88); }
+}
+.tt-score-pop {
+  position: fixed;
+  pointer-events: none;
+  font-weight: 900;
+  font-size: 1.55rem;
+  letter-spacing: -0.01em;
+  z-index: 99999;
+  animation: ttScorePopFloat 1.05s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.tt-score-pop.is-positive {
+  color: #5dff90;
+  text-shadow: 0 0 8px rgba(50,255,110,.8), 0 2px 0 rgba(0,0,0,.6);
+}
+.tt-score-pop.is-negative {
+  color: #ff5555;
+  text-shadow: 0 0 8px rgba(255,60,60,.8), 0 2px 0 rgba(0,0,0,.6);
+}
+
 .score-add-wrap { grid-area: add; width: 52px; height: 32px; }
 .score-add-btn {
   width: 52px; height: 32px; border-radius: 10px;
@@ -6545,6 +6574,85 @@ function ensureBoardTextVisibleDuringGameplay(){
         } catch (e) {}
     }
 
+    /* Synthesize score-feedback sounds via Web Audio API.
+       Positive : Mario-style coin ching — B5 (988 Hz) blip then E6 (1319 Hz) ring.
+       Negative : three-note descending "wah-wah-wah" — Bb4 → G4 → Eb4, square wave. */
+    function playScorePopSound(isPositive){
+        if(!soundEnabled){ return; }
+        try {
+            if(!audioContext){
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            var ctx = audioContext;
+            var now = ctx.currentTime;
+
+            if(isPositive){
+                /* ── Coin ching: B5 blip (0–22 ms) → E6 ring (22–210 ms) ── */
+                /* Square wave + sine overtone layered for authentic retro timbre */
+                var notes = [
+                    { freq: 987.8,  start: 0,     end: 0.022, vol: 0.13, type: 'square' },
+                    { freq: 1318.5, start: 0.022,  end: 0.21,  vol: 0.13, type: 'square' },
+                    { freq: 2637,   start: 0.022,  end: 0.14,  vol: 0.045, type: 'sine'  }
+                ];
+                notes.forEach(function(n){
+                    var osc  = ctx.createOscillator();
+                    var gain = ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.type = n.type;
+                    osc.frequency.setValueAtTime(n.freq, now + n.start);
+                    gain.gain.setValueAtTime(n.vol, now + n.start);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + n.end);
+                    osc.start(now + n.start);
+                    osc.stop(now + n.end + 0.01);
+                });
+
+            } else {
+                /* ── Wah-wah-wah: Bb4 → G4 → Eb4 descending, overlapping ── */
+                /* Each note fades in slightly then decays — "losing" horn feel */
+                var wah = [
+                    { freq: 466.2, start: 0,     end: 0.13  },
+                    { freq: 392.0, start: 0.09,  end: 0.22  },
+                    { freq: 311.1, start: 0.18,  end: 0.34  }
+                ];
+                wah.forEach(function(n){
+                    var osc  = ctx.createOscillator();
+                    var gain = ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(n.freq, now + n.start);
+                    gain.gain.setValueAtTime(0, now + n.start);
+                    gain.gain.linearRampToValueAtTime(0.10, now + n.start + 0.018);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + n.end);
+                    osc.start(now + n.start);
+                    osc.stop(now + n.end + 0.01);
+                });
+            }
+        } catch(e){}
+    }
+
+    /* Spawn a floating "+N" / "-N" label above the player's score display.
+       Queries fresh after render() so the ref is always current. */
+    function spawnScorePop(playerIndex, delta){
+        if(!delta){ return; }
+        var card = document.querySelector('.score-entry[data-player-index="' + playerIndex + '"]');
+        if(!card){ return; }
+        var scoreEl = card.querySelector('.score-value');
+        if(!scoreEl){ return; }
+        playScorePopSound(delta > 0);
+        var rect = scoreEl.getBoundingClientRect();
+        var pop = document.createElement('div');
+        pop.className = 'tt-score-pop ' + (delta > 0 ? 'is-positive' : 'is-negative');
+        pop.textContent = (delta > 0 ? '+' : '') + delta;
+        pop.style.left = (rect.left + rect.width / 2) + 'px';
+        pop.style.top  = rect.top + 'px';
+        document.body.appendChild(pop);
+        pop.addEventListener('animationend', function(){
+            if(pop.parentNode){ pop.parentNode.removeChild(pop); }
+        });
+    }
+
     function applyDelta(playerIndex, delta){
         lastAction = {
             playerIndex: playerIndex,
@@ -6570,6 +6678,7 @@ function ensureBoardTextVisibleDuringGameplay(){
         }
         saveState();
         render();
+        spawnScorePop(playerIndex, delta);
         /* Pulse the fire on every correct answer once the streak is on-fire (3+) */
         if(state.streakPlayerIndex === playerIndex && state.streakCount >= 3){
             triggerStreakPulse(playerIndex);
@@ -6587,13 +6696,16 @@ function ensureBoardTextVisibleDuringGameplay(){
 
     function undoLast(){
         if(!lastAction){ return; }
-        state.players[lastAction.playerIndex].score = lastAction.prevScore;
+        var undoPlayerIndex = lastAction.playerIndex;
+        var undoDelta = lastAction.prevScore - state.players[undoPlayerIndex].score;
+        state.players[undoPlayerIndex].score = lastAction.prevScore;
         state.lastUpdated = lastAction.prevLastUpdated;
         state.streakPlayerIndex = typeof lastAction.prevStreakPlayerIndex === "number" ? lastAction.prevStreakPlayerIndex : null;
         state.streakCount = Number(lastAction.prevStreakCount) > 0 ? Number(lastAction.prevStreakCount) : 0;
         lastAction = null;
         saveState();
         render();
+        spawnScorePop(undoPlayerIndex, undoDelta);
     }
 
     function resetScores(){
