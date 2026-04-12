@@ -1207,64 +1207,214 @@ kbd {
 /* ─── Finale Podium ──────────────────────────────────────────────── */
 @keyframes ttChampionGlow {
   0%, 100% {
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.18),
-      0 0 32px rgba(255,215,90,.55), 0 0 70px rgba(255,215,90,.26),
-      0 -18px 60px rgba(0,0,0,.62);
-    border-color: rgba(255,215,90,.72);
+    box-shadow:
+      0 0 0 1.5px rgba(255,210,42,.70),
+      0 0 32px rgba(255,210,42,.42),
+      0 0 80px rgba(255,210,42,.18),
+      0 28px 80px rgba(0,0,0,.78);
   }
   50% {
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.26),
-      0 0 62px rgba(255,215,90,.96), 0 0 120px rgba(255,215,90,.52),
-      0 -18px 60px rgba(0,0,0,.62);
-    border-color: rgba(255,236,132,1);
+    box-shadow:
+      0 0 0 1.5px rgba(255,236,132,1),
+      0 0 60px rgba(255,210,42,.92),
+      0 0 130px rgba(255,210,42,.44),
+      0 28px 80px rgba(0,0,0,.78);
   }
 }
-#tt-finale-podium {
-  position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+@keyframes ttSilverGlow {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1.5px rgba(180,200,228,.46),
+      0 0 22px rgba(180,200,228,.18),
+      0 28px 72px rgba(0,0,0,.72);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1.5px rgba(210,224,244,.82),
+      0 0 44px rgba(180,200,228,.40),
+      0 28px 72px rgba(0,0,0,.72);
+  }
 }
+@keyframes ttBronzeGlow {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1.5px rgba(192,118,46,.42),
+      0 0 18px rgba(192,118,46,.16),
+      0 28px 68px rgba(0,0,0,.70);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1.5px rgba(220,146,72,.76),
+      0 0 36px rgba(192,118,46,.34),
+      0 28px 68px rgba(0,0,0,.70);
+  }
+}
+#tt-finale-podium { display: none; } /* legacy stub */
 .tt-podium-stage {
   position: absolute; left: 50%; transform: translateX(-50%);
   bottom: calc(var(--app-bottom-bar-h) + 10px);
-  display: flex; align-items: flex-end; gap: 10px;
+  display: flex; align-items: flex-end;
+  gap: clamp(12px, 1.6vw, 24px);
 }
 .tt-podium-slot {
-  transform: translateY(115vh);
-  transition: transform 1.4s cubic-bezier(0.22, 1, 0.36, 1);
+  display: flex; flex-direction: column; align-items: center;
+  transform: translateY(120vh);
+  transition: transform 1.55s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .tt-podium-slot.tt-podium-risen { transform: translateY(0); }
+
+/* ── Card base ── */
 .tt-podium-card {
-  border-radius: 14px; border: 1.5px solid rgba(255,255,255,.16);
-  background: rgba(20,26,76,.95);
+  border-radius: 20px;
+  border: 1.5px solid rgba(255,255,255,.10);
   display: flex; flex-direction: column;
-  align-items: center; justify-content: flex-end;
-  padding: 10px 8px 8px;
-  box-shadow: 0 -14px 52px rgba(0,0,0,.58), inset 0 1px 0 rgba(255,255,255,.09);
-  position: relative; overflow: visible;
+  align-items: center; justify-content: space-between;
+  padding: clamp(12px,1.4vh,20px) clamp(12px,1.4vw,20px) clamp(12px,1.4vh,18px);
+  position: relative; overflow: hidden;
+  gap: 0;
 }
+/* 1st place: icon floats centered in upper half rather than pinned to top */
+.tt-podium-card.tt-podium-1st { justify-content: space-around; }
+/* Bottom info group — score / pts / divider / name / place */
+.tt-podium-info {
+  display: flex; flex-direction: column;
+  align-items: center; width: 100%; gap: 0;
+}
+/* Colored crown bar at top of each card */
+.tt-podium-card::before {
+  content: ""; position: absolute;
+  top: 0; left: 0; right: 0; height: 4px;
+}
+/* Inner glass sheen */
+.tt-podium-card::after {
+  content: ""; position: absolute;
+  top: 4px; left: 0; right: 0; height: 40%;
+  background: linear-gradient(180deg, rgba(255,255,255,.055) 0%, rgba(255,255,255,0) 100%);
+  pointer-events: none;
+}
+
+/* ── 1st Place (gold) ── */
 .tt-podium-card.tt-podium-1st {
-  width: 162px; height: 226px;
-  border-color: rgba(255,215,90,.70);
-  background: rgba(20,26,66,.97);
-  animation: ttChampionGlow 2.1s ease-in-out infinite;
-  animation-delay: 1.8s;
+  width:  clamp(168px, 17vw, 272px);
+  height: clamp(305px, 35vh, 455px);
+  background: linear-gradient(168deg,
+    rgba(52,36,0,.99) 0%,
+    rgba(28,20,0,.99) 55%,
+    rgba(18,12,0,1)   100%);
+  border-color: rgba(255,210,42,.52);
+  animation: ttChampionGlow 2.4s ease-in-out infinite;
+  animation-delay: 2s;
 }
-.tt-podium-card.tt-podium-2nd { width: 144px; height: 174px; border-color: rgba(214,224,236,.46); }
-.tt-podium-card.tt-podium-3rd { width: 130px; height: 144px; border-color: rgba(212,145,92,.46); }
-.tt-podium-rank-icon { font-size: 26px; line-height: 1; margin-bottom: 5px; }
+.tt-podium-card.tt-podium-1st::before {
+  background: linear-gradient(90deg,
+    transparent 0%, #ffd22a 30%, #fff5a0 50%, #ffd22a 70%, transparent 100%);
+  box-shadow: 0 0 12px rgba(255,210,42,.6);
+}
+
+/* ── 2nd Place (silver) ── */
+.tt-podium-card.tt-podium-2nd {
+  width:  clamp(146px, 14.8vw, 238px);
+  height: clamp(248px, 29vh, 390px);
+  background: linear-gradient(168deg,
+    rgba(28,36,58,.99) 0%,
+    rgba(14,20,38,.99) 55%,
+    rgba(8,12,26,1)    100%);
+  border-color: rgba(180,200,228,.34);
+  animation: ttSilverGlow 2.9s ease-in-out infinite;
+  animation-delay: 2.5s;
+}
+.tt-podium-card.tt-podium-2nd::before {
+  background: linear-gradient(90deg,
+    transparent 0%, #b4c8e0 30%, #e8f0f8 50%, #b4c8e0 70%, transparent 100%);
+  box-shadow: 0 0 8px rgba(180,200,228,.4);
+}
+
+/* ── 3rd Place (bronze) ── */
+.tt-podium-card.tt-podium-3rd {
+  width:  clamp(128px, 12.8vw, 206px);
+  height: clamp(206px, 24vh, 328px);
+  background: linear-gradient(168deg,
+    rgba(44,24,6,.99) 0%,
+    rgba(22,12,2,.99) 55%,
+    rgba(12,6,0,1)    100%);
+  border-color: rgba(192,118,46,.34);
+  animation: ttBronzeGlow 3.1s ease-in-out infinite;
+  animation-delay: 2.8s;
+}
+.tt-podium-card.tt-podium-3rd::before {
+  background: linear-gradient(90deg,
+    transparent 0%, #c07830 30%, #e8a860 50%, #c07830 70%, transparent 100%);
+  box-shadow: 0 0 8px rgba(192,118,46,.36);
+}
+
+/* ── Rank icon ── */
+.tt-podium-rank-icon {
+  font-size: clamp(30px, 3.4vw, 52px);
+  line-height: 1;
+  filter: drop-shadow(0 3px 10px rgba(0,0,0,.55));
+}
+
+/* ── Score number ── */
 .tt-podium-score {
-  font-size: 20px; font-weight: 900; color: var(--accent);
-  font-variant-numeric: tabular-nums; margin-bottom: 4px; line-height: 1;
+  font-size: clamp(24px, 2.8vw, 42px);
+  font-weight: 900; letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums; line-height: 1;
+  text-shadow: 0 2px 6px rgba(0,0,0,.65);
+  color: var(--accent); margin-bottom: 0;
 }
-.tt-podium-card.tt-podium-1st .tt-podium-score { font-size: 26px; color: #ffe58c; }
+.tt-podium-card.tt-podium-1st .tt-podium-score {
+  font-size: clamp(30px, 3.6vw, 52px);
+  color: #ffe870;
+  text-shadow: 0 0 28px rgba(255,220,42,.48), 0 2px 6px rgba(0,0,0,.75);
+}
+.tt-podium-card.tt-podium-2nd .tt-podium-score { color: #c8daf0; }
+.tt-podium-card.tt-podium-3rd .tt-podium-score { color: #e0a864; }
+
+/* ── "pts" micro label ── */
+.tt-podium-pts {
+  font-size: clamp(8px, .82vw, 11px);
+  font-weight: 700; letter-spacing: .16em;
+  text-transform: uppercase; color: rgba(255,255,255,.44);
+  line-height: 1; margin-bottom: clamp(5px,.7vh,9px);
+}
+
+/* ── Divider ── */
+.tt-podium-divider {
+  width: 55%; height: 1px; flex-shrink: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.20), transparent);
+  margin: clamp(5px,.7vh,8px) 0;
+}
+.tt-podium-card.tt-podium-1st .tt-podium-divider {
+  background: linear-gradient(90deg, transparent, rgba(255,210,42,.38), transparent);
+}
+
+/* ── Player name ── */
 .tt-podium-name {
-  font-size: 12px; font-weight: 700; color: #fff;
-  text-align: center; word-break: break-word; line-height: 1.25; max-width: 100%;
+  font-size: clamp(12px, 1.3vw, 18px);
+  font-weight: 800; color: #fff;
+  text-align: center; word-break: break-word;
+  line-height: 1.2; max-width: 100%;
+  letter-spacing: .01em;
+  text-shadow: 0 1px 5px rgba(0,0,0,.65);
 }
-.tt-podium-card.tt-podium-1st .tt-podium-name { font-size: 14px; }
+.tt-podium-card.tt-podium-1st .tt-podium-name {
+  font-size: clamp(14px, 1.55vw, 22px);
+  color: #fff8e0;
+}
+.tt-podium-card.tt-podium-2nd .tt-podium-name { color: #e8f0fa; }
+.tt-podium-card.tt-podium-3rd .tt-podium-name { color: #f8ece0; }
+
+/* ── Place label ── */
 .tt-podium-place {
-  font-size: 9px; font-weight: 600; opacity: .5;
-  margin-top: 4px; letter-spacing: .07em; text-transform: uppercase;
+  font-size: clamp(8px, .82vw, 11px);
+  font-weight: 700; letter-spacing: .14em;
+  text-transform: uppercase; margin-top: clamp(3px,.45vh,6px);
+  line-height: 1;
 }
+.tt-podium-card.tt-podium-1st .tt-podium-place { color: #ffd22a; }
+.tt-podium-card.tt-podium-2nd .tt-podium-place { color: #a8bcd4; }
+.tt-podium-card.tt-podium-3rd .tt-podium-place { color: #b87030; }
+
 /* Participation badge overlaid on existing score cards */
 .tt-participation-badge {
   position: absolute; inset: 0; border-radius: 14px;
@@ -1280,6 +1430,120 @@ kbd {
 .tt-participation-badge .tt-badge-text {
   font-size: 9px; font-weight: 600; color: rgba(255,255,255,.52);
   text-transform: uppercase; letter-spacing: .06em;
+}
+/* ─────────────────────────────────────────────────────────────────── */
+
+/* ─── Finale Scene (unified backdrop + palms + logo + podium) ─────── */
+#tt-finale-scene {
+  position: fixed; inset: 0; z-index: 10100; pointer-events: none; overflow: hidden;
+}
+.tt-finale-backdrop {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(40,64,180,.32) 0%, rgba(14,22,68,.22) 28%, rgba(3,6,22,.14) 52%, rgba(0,0,0,.44) 88%),
+    linear-gradient(to bottom, rgba(4,8,28,.08) 0%, rgba(4,8,28,.18) 50%, rgba(0,0,0,.38) 100%),
+    rgba(3,6,22,.52);
+  backdrop-filter: blur(10px) saturate(.88);
+  opacity: 0;
+  transition: opacity 2.2s ease;
+}
+.tt-finale-backdrop.tt-fb-in { opacity: 1; }
+
+/* Subtle vignette overlay for depth */
+.tt-finale-backdrop::after {
+  content: ""; position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 55%, rgba(0,0,0,0) 38%, rgba(0,0,0,.28) 80%, rgba(0,0,0,.44) 100%);
+  pointer-events: none;
+}
+
+.tt-finale-palm {
+  position: absolute; bottom: 0;
+  height: 100vh; object-fit: contain; object-position: bottom;
+  max-width: 38vw; opacity: 0;
+  transition: transform 1.9s cubic-bezier(.18,.84,.18,1), opacity 1.7s ease;
+}
+.tt-finale-palm.tt-fp-left  { left: -3vw; transform: translateX(-24vw); }
+.tt-finale-palm.tt-fp-right { right: -3vw; transform: translateX(24vw); }
+.tt-finale-palm.tt-fp-in    { opacity: .80; transform: translateX(0); }
+
+/* ── Logo centered at top ── */
+.tt-finale-logo {
+  position: absolute; top: 18px; left: 50%;
+  width: min(67.4475vw, 1172px);
+  display: flex; flex-direction: column; align-items: center;
+  transform-origin: top center;
+  transform: translateX(-50%) rotate(-2deg) scale(1.24) translateY(-32px);
+  filter: drop-shadow(0 18px 32px rgba(0,0,0,.60)) drop-shadow(0 0 5px rgba(255,255,255,.44)) drop-shadow(0 0 12px rgba(255,109,198,.24));
+  opacity: 0; overflow: visible;
+  transition: opacity 1.9s ease-out, transform 1.9s cubic-bezier(.16,.84,.24,1);
+  pointer-events: none; user-select: none;
+}
+.tt-finale-logo.tt-fl-in {
+  opacity: .998;
+  transform: translateX(-50%) rotate(-2deg) scale(1.24) translateY(0);
+  animation: viceGlowIntro 1.05s ease-out 1, viceGlowIdle 3.2s ease-in-out 1.05s infinite;
+}
+.tt-finale-logo .vice-title-top {
+  font-family: Impact, Haettenschweiler, "Arial Black", sans-serif;
+  font-size: clamp(68px, 6vw, 108px); font-weight: 900; letter-spacing: -.02em;
+  text-transform: lowercase; line-height: .78; color: #fff;
+  -webkit-text-stroke: 4px #06070c; paint-order: stroke fill;
+  transform: scaleY(1.03) skewX(-6deg);
+  text-shadow: 0 3px 0 rgba(6,7,12,.94), 0 10px 16px rgba(0,0,0,.26), 0 0 10px rgba(255,255,255,.10);
+}
+.tt-finale-logo .vice-title-bottom {
+  position: relative; margin-top: -14px; display: inline-block;
+  font-family: "ViceCityScript", "Brush Script MT", "Segoe Script", "Lucida Handwriting", cursive;
+  font-size: clamp(104px, 8.2vw, 152px); font-weight: 400; line-height: .82; letter-spacing: -.01em;
+  color: #ff69c6; -webkit-text-stroke: 2.4px #130814; paint-order: stroke fill;
+  transform: rotate(-4.5deg);
+  text-shadow: 0 0 2px rgba(255,255,255,.98), 0 0 6px rgba(255,109,198,.26), 3px 3px 0 rgba(86,233,255,.88), 0 0 16px rgba(255,109,198,.14);
+}
+.tt-finale-logo .vice-title-bottom::after {
+  content: ""; position: absolute; left: 10%; bottom: -7px; width: 116%; height: 4px;
+  background: linear-gradient(90deg, #ff69c6 0%, #ff84d3 52%, #59ebff 100%);
+  border-radius: 999px;
+  box-shadow: 0 0 0 2px rgba(19,8,20,.92), 0 0 6px rgba(255,109,198,.28), 3px 3px 0 rgba(86,233,255,.88);
+  transform: rotate(-3deg); transform-origin: left center;
+}
+
+/* ── "Final Standings" subtitle banner ── */
+.tt-finale-subtitle {
+  position: absolute; left: 50%; transform: translateX(-50%) translateY(10px);
+  top: clamp(196px, 24vh, 280px);
+  white-space: nowrap;
+  font-size: clamp(11px, 1.1vw, 15px);
+  font-weight: 700; letter-spacing: .26em;
+  text-transform: uppercase; color: rgba(255,255,255,.52);
+  opacity: 0;
+  transition: opacity 1.2s ease, transform 1.2s ease;
+}
+.tt-finale-subtitle::before,
+.tt-finale-subtitle::after {
+  content: "";
+  display: inline-block; vertical-align: middle;
+  width: clamp(28px, 4vw, 60px); height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.36));
+  margin: 0 12px;
+}
+.tt-finale-subtitle::after {
+  background: linear-gradient(90deg, rgba(255,255,255,.36), transparent);
+}
+.tt-finale-subtitle.tt-fs-in {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+@media (max-width: 720px) {
+  .tt-finale-logo { width: min(82vw, 560px); top: 8px; }
+  .tt-finale-logo .vice-title-top  { font-size: clamp(46px, 9vw, 76px); }
+  .tt-finale-logo .vice-title-bottom { font-size: clamp(78px, 18vw, 120px); }
+  .tt-finale-palm { max-width: 50vw; }
+  .tt-finale-subtitle { top: clamp(148px, 20vh, 210px); }
+}
+@media (max-width: 480px) {
+  .tt-podium-stage { gap: 8px; }
 }
 /* ─────────────────────────────────────────────────────────────────── */
 
@@ -5925,18 +6189,82 @@ function ensureBoardTextVisibleDuringGameplay(){
         slot.className = 'tt-podium-slot';
         var card = document.createElement('div');
         card.className = 'tt-podium-card ' + cssClass;
+
+        /* Trophy / medal icon — floats at top via margin-top:auto on parent flex */
         var icon = document.createElement('div');
         icon.className = 'tt-podium-rank-icon'; icon.textContent = rankIcon;
+
+        /* Score number */
         var score = document.createElement('div');
         score.className = 'tt-podium-score'; score.textContent = playerData.score;
+
+        /* "pts" micro-label below score */
+        var pts = document.createElement('div');
+        pts.className = 'tt-podium-pts'; pts.textContent = 'pts';
+
+        /* Thin rule separating score from name */
+        var divider = document.createElement('div');
+        divider.className = 'tt-podium-divider';
+
+        /* Player name */
         var name = document.createElement('div');
         name.className = 'tt-podium-name'; name.textContent = playerData.name;
+
+        /* Place label */
         var place = document.createElement('div');
         place.className = 'tt-podium-place'; place.textContent = placeLabel;
-        card.appendChild(icon); card.appendChild(score);
-        card.appendChild(name); card.appendChild(place);
+
+        /* Bottom info group — space-between pushes icon to top, info to bottom */
+        var info = document.createElement('div');
+        info.className = 'tt-podium-info';
+        info.appendChild(score);
+        info.appendChild(pts);
+        info.appendChild(divider);
+        info.appendChild(name);
+        info.appendChild(place);
+
+        card.appendChild(icon);
+        card.appendChild(info);
         slot.appendChild(card);
         return slot;
+    }
+
+    /* Flash all board cells in a fast checker wave — like the intro reveal
+       but purely visual (no topic locking). Used at finale start. */
+    function runFinaleBoardFlash(){
+        var cells = Array.prototype.slice.call(document.querySelectorAll(
+            '.grid-row-cats .grid-cell, .grid-row-questions .grid-cell'));
+        if(!cells.length){ return; }
+        var even = [], odd = [];
+        cells.forEach(function(cell){
+            var row = parseInt(cell.getAttribute('data-row') || '0', 10);
+            var col = parseInt(cell.getAttribute('data-col') || '0', 10);
+            ((row + col) % 2 === 0 ? even : odd).push(cell);
+        });
+        /* Match intro sequence pacing: stagger start + slow per-cell cadence */
+        var animOffset = 320;   /* brief pause before first cell lights — creates suspense */
+        var baseDelay  = 160;   /* ms per cell — matches intro's 170ms sweep */
+        var waveGap    = 128;   /* ms between checker waves */
+        var audio = ensureBoardRevealAudio();
+        if(audio){
+            try { audio.pause(); audio.currentTime = 0;
+                var ap = audio.play(); if(ap && ap.catch){ ap.catch(function(){}); }
+            } catch(e){}
+        }
+        var waves = [shuffleArray(even.slice()), shuffleArray(odd.slice())];
+        waves.forEach(function(group, wi){
+            group.forEach(function(cell, ci){
+                var d = animOffset + wi * waveGap + ci * baseDelay;
+                finaleTimers.push(setTimeout(function(){
+                    cell.classList.remove('tt-board-intro-flash');
+                    void cell.offsetWidth;
+                    cell.classList.add('tt-board-intro-flash');
+                    finaleTimers.push(setTimeout(function(){
+                        cell.classList.remove('tt-board-intro-flash');
+                    }, 340));
+                }, d));
+            });
+        });
     }
 
     function runFinaleSequence(){
@@ -5959,42 +6287,96 @@ function ensureBoardTextVisibleDuringGameplay(){
                 var pp = aud.play(); if(pp && pp.catch){ pp.catch(function(){}); }
             } catch(e){}
         }
-        /* Bring back the intro theme as a finale bed right after victory starts. */
+        /* Intro theme as a finale bed */
         startIntroMusicForFinale(180);
 
-        /* Board sparkle */
-        finaleTimers.push(setTimeout(function(){ runBoardFinaleSparkle(7600); }, 280));
+        /* ── Step 1: board intro light sequence (checker wave flash) ── */
+        finaleTimers.push(setTimeout(function(){ runFinaleBoardFlash(); }, 200));
 
-        /* Build podium overlay — order on stage: 2nd | 1st | 3rd */
-        var old = document.getElementById('tt-finale-podium');
-        if(old){ old.parentNode.removeChild(old); }
-        var overlay = document.createElement('div');
-        overlay.id = 'tt-finale-podium';
+        /* ── Step 2: Build the unified finale scene ─────────────────── */
+        var oldScene = document.getElementById('tt-finale-scene');
+        if(oldScene){ oldScene.parentNode.removeChild(oldScene); }
+
+        var scene = document.createElement('div');
+        scene.id = 'tt-finale-scene';
+
+        /* Backdrop (blur panel) */
+        var backdrop = document.createElement('div');
+        backdrop.className = 'tt-finale-backdrop';
+        scene.appendChild(backdrop);
+
+        /* Palms */
+        var palmL = document.createElement('img');
+        palmL.className = 'tt-finale-palm tt-fp-left';
+        palmL.src = 'left.png'; palmL.alt = '';
+        scene.appendChild(palmL);
+
+        var palmR = document.createElement('img');
+        palmR.className = 'tt-finale-palm tt-fp-right';
+        palmR.src = 'right.png'; palmR.alt = '';
+        scene.appendChild(palmR);
+
+        /* Logo at top-center */
+        var logo = document.createElement('div');
+        logo.className = 'tt-finale-logo';
+        logo.setAttribute('aria-hidden', 'true');
+        logo.innerHTML = '<div class="vice-title-top">Transfer</div>'
+                       + '<div class="vice-title-bottom">Trivia</div>';
+        scene.appendChild(logo);
+
+        /* "Final Standings" subtitle */
+        var subtitle = document.createElement('div');
+        subtitle.className = 'tt-finale-subtitle';
+        subtitle.setAttribute('aria-hidden', 'true');
+        subtitle.textContent = 'Final Standings';
+        scene.appendChild(subtitle);
+
+        /* Podium stage — order on stage: 2nd | 1st | 3rd */
         var stage = document.createElement('div');
         stage.className = 'tt-podium-stage';
-
         var defs = [
-            { rank: 1, css: 'tt-podium-2nd', label: '2nd Place', icon: '🥈', delay: 1300 },
-            { rank: 0, css: 'tt-podium-1st', label: '1st Place', icon: '🏆', delay: 880  },
-            { rank: 2, css: 'tt-podium-3rd', label: '3rd Place', icon: '🥉', delay: 1660 }
+            { rank: 1, css: 'tt-podium-2nd', label: '2nd Place', icon: '🥈', riseDelay: 400  },
+            { rank: 0, css: 'tt-podium-1st', label: '1st Place', icon: '🏆', riseDelay: 0    },
+            { rank: 2, css: 'tt-podium-3rd', label: '3rd Place', icon: '🥉', riseDelay: 760  }
         ];
         var slots = [];
         defs.forEach(function(def){
             if(!top3[def.rank]){ return; }
             var sl = buildPodiumSlot(top3[def.rank], def.css, def.label, def.icon);
-            slots.push({ slot: sl, delay: def.delay });
+            slots.push({ slot: sl, riseDelay: def.riseDelay });
             stage.appendChild(sl);
         });
-        overlay.appendChild(stage);
-        document.body.appendChild(overlay);
+        scene.appendChild(stage);
 
-        /* Animate rise */
+        document.body.appendChild(scene);
+
+        /* ── Step 3: fade in backdrop while sliding in palms — after board flash ── */
+        finaleTimers.push(setTimeout(function(){
+            backdrop.classList.add('tt-fb-in');
+            palmL.classList.add('tt-fp-in');
+        }, 3300));
+        finaleTimers.push(setTimeout(function(){
+            palmR.classList.add('tt-fp-in');
+        }, 3520));
+
+        /* ── Step 4: logo + subtitle drop in with glow ───────────────── */
+        finaleTimers.push(setTimeout(function(){
+            logo.classList.add('tt-fl-in');
+        }, 4200));
+        finaleTimers.push(setTimeout(function(){
+            subtitle.classList.add('tt-fs-in');
+        }, 4520));
+
+        /* ── Step 5: podium rises ─────────────────────────────────────── */
+        var podiumBase = 5200;
         slots.forEach(function(s){
-            finaleTimers.push(setTimeout(function(){ s.slot.classList.add('tt-podium-risen'); }, s.delay));
+            finaleTimers.push(setTimeout(function(){
+                s.slot.classList.add('tt-podium-risen');
+            }, podiumBase + s.riseDelay));
         });
 
-        /* Participation badges on scoreboard cards (4th+ players) */
-        finaleTimers.push(setTimeout(function(){
+        /* ── Step 6: participation badges (4th+ players) ─────────────── */
+        finaleTimers.push(setTimeout(function(){  /* delay aligned with podium rise */
             others.forEach(function(player, i){
                 var card = document.querySelector('.score-entry[data-player-index="' + player.index + '"]');
                 if(!card){ return; }
@@ -6010,17 +6392,28 @@ function ensureBoardTextVisibleDuringGameplay(){
                 card.appendChild(badge);
                 finaleTimers.push(setTimeout(function(){ badge.classList.add('tt-badge-visible'); }, i * 220));
             });
-        }, 3800));
+        }, 7400));
     }
 
     function checkAndTriggerFinale(){
         if(finaleTriggered){ return; }
         if(totalClues() > 0 && answeredCount() >= totalClues()){
-            /* Close the modal immediately so the gameboard is visible first */
+            /* Close the modal — modal.hide() lives on the JS object, not the DOM element */
             try {
-                var qm = document.getElementById('question-modal');
-                if(qm && typeof qm.hide === 'function'){ qm.hide(); }
-            } catch(e){}
+                if(typeof modal !== 'undefined' && modal && typeof modal.hide === 'function'){
+                    modal.hide();
+                } else if(typeof hideModal === 'function'){
+                    hideModal();
+                } else {
+                    var qmEl = document.getElementById('question-modal');
+                    if(qmEl){ qmEl.style.display = 'none'; }
+                }
+            } catch(e){
+                try {
+                    var qmEl = document.getElementById('question-modal');
+                    if(qmEl){ qmEl.style.display = 'none'; }
+                } catch(e2){}
+            }
             /* Brief pause to let the board show, then launch finale */
             finaleTimers.push(setTimeout(runFinaleSequence, 900));
         }
@@ -6151,7 +6544,7 @@ function ensureBoardTextVisibleDuringGameplay(){
     finaleTriggered = false;
     clearFinaleTimers();
     if(finaleAudio){ try{ finaleAudio.pause(); finaleAudio.currentTime = 0; } catch(e){} }
-    var fp = document.getElementById('tt-finale-podium');
+    var fp = document.getElementById('tt-finale-scene');
     if(fp){ fp.parentNode.removeChild(fp); }
     /* Remove any participation badges */
     document.querySelectorAll('.tt-participation-badge').forEach(function(b){ b.parentNode.removeChild(b); });
