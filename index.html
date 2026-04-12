@@ -975,10 +975,14 @@ kbd {
   transition: background-color .2s ease, border-color .2s ease, transform .2s ease, box-shadow .2s ease;
   box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
 }
+/* Score-update flash: uses filter so it never conflicts with rank border/bg/shadow */
+@keyframes scoreUpdateFlash {
+  0%   { filter: brightness(1.55) saturate(1.2); }
+  40%  { filter: brightness(1.25) saturate(1.1); }
+  100% { filter: brightness(1.0)  saturate(1.0); }
+}
 .score-entry.last-updated {
-  background: rgba(255,214,10,.14); border-color: rgba(255,214,10,.45);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 0 0 1px rgba(255,214,10,.08);
-  transform: translateY(-1px);
+  animation: scoreUpdateFlash 0.65s ease-out forwards;
 }
 /* Suppress pseudo-element chaser animations */
 .score-entry::before, .score-entry::after,
@@ -1093,6 +1097,8 @@ kbd {
 .score-entry.rank-animated.rank-gold .rank-marker.is-crown {
   filter: drop-shadow(0 2px 3px rgba(0,0,0,.35)) drop-shadow(0 0 8px rgba(255,215,90,.14));
 }
+/* All rank holders (incumbent + tied) share the full frame.
+   Tied players look identical to the incumbent — just no medal number marker. */
 .score-entry.rank-gold, .score-entry.rank-silver, .score-entry.rank-bronze {
   border-width: 2px; border-style: solid;
   background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.045));
@@ -4036,7 +4042,7 @@ if (CLEAN_MODE) {
                                 score: Number((p && p.score) || 0)
                             };
                         }),
-                        lastUpdated: typeof parsed.lastUpdated === "number" ? parsed.lastUpdated : null,
+                        lastUpdated: null, /* never restore — it's a transient flash only */
                         introSeen: !!parsed.introSeen,
                         soundEnabled: parsed.soundEnabled !== false,
                         rankAnimatedByTier: parsed.rankAnimatedByTier && typeof parsed.rankAnimatedByTier === "object" ? parsed.rankAnimatedByTier : {},
@@ -4242,8 +4248,10 @@ if (CLEAN_MODE) {
 
     var victoryLockBannerTimer = null;
     var victoryLockFlashTimer = null;
+    var lastUpdatedTimer = null;
     var VICTORY_LOCK_BANNER_MS = 5500;
     var VICTORY_LOCK_FLASH_MS  = 1300;
+    var LAST_UPDATED_FLASH_MS  = 1800;
 
     function getRemainingBoardPoints(){
         var total = 0;
@@ -6666,6 +6674,14 @@ function ensureBoardTextVisibleDuringGameplay(){
         state.lastUpdated = playerIndex;
         applyCorrectStreak(playerIndex);
 
+        /* Auto-clear the last-updated highlight after a short flash */
+        if(lastUpdatedTimer){ clearTimeout(lastUpdatedTimer); lastUpdatedTimer = null; }
+        lastUpdatedTimer = setTimeout(function(){
+            lastUpdatedTimer = null;
+            state.lastUpdated = null;
+            render();
+        }, LAST_UPDATED_FLASH_MS);
+
         var activeQuestion = document.querySelector(".active-question");
         var answeredCell = activeQuestion; /* save ref before inert/render */
         if(activeQuestion && delta > 0){
@@ -6696,6 +6712,7 @@ function ensureBoardTextVisibleDuringGameplay(){
 
     function undoLast(){
         if(!lastAction){ return; }
+        if(lastUpdatedTimer){ clearTimeout(lastUpdatedTimer); lastUpdatedTimer = null; }
         var undoPlayerIndex = lastAction.playerIndex;
         var undoDelta = lastAction.prevScore - state.players[undoPlayerIndex].score;
         state.players[undoPlayerIndex].score = lastAction.prevScore;
