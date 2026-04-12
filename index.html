@@ -1133,10 +1133,10 @@ kbd {
   100% { box-shadow: inset 0 1px 0 rgba(255,255,255,.07), 0 12px 26px rgba(0,0,0,.26); filter: brightness(1); }
 }
 @keyframes ttFireAnswerFlashInner {
-  0%   { opacity: .05; }
+  0%   { opacity: 1; }
   7%   { opacity: 1; color: #ffe040 !important; text-shadow: 0 0 18px rgba(255,190,0,.95); }
   28%  { opacity: .55; }
-  100% { opacity: .05; }
+  100% { opacity: 1; }
 }
 @keyframes ttAnswerBoxBurstPulse {
   0% {
@@ -1550,9 +1550,13 @@ body.tt-drawing-active #tt-meter-stage * { pointer-events: auto; }
     linear-gradient(to bottom, rgba(0,0,0,0) 58%, rgba(0,0,0,.20) 78%, rgba(0,0,0,.34) 100%);
 }
 #intro-overlay.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+#intro-overlay.hidden * { pointer-events: none !important; visibility: hidden !important; }
 #intro-overlay > * { position: relative; }
-#intro-overlay.intro-exiting {
+#intro-overlay.intro-exiting,
+#intro-overlay.intro-exiting * {
   pointer-events: none;
+}
+#intro-overlay.intro-exiting {
   opacity: 0;
   /* 1.5 s hold lets the chime + initial element motion register,
      then the whole overlay — dark background, backdrop-blur, and all
@@ -4055,7 +4059,25 @@ if (CLEAN_MODE) {
         return meta;
     }
 
-function render(){
+function ensureBoardTextVisibleDuringGameplay(){
+        /* Don't interfere while the flash animation is legitimately running. */
+        if(boardRevealActive){ return; }
+        var gameplay = document.getElementById('gameplay');
+        if(!gameplay){ return; }
+        /* Only strip the class once the intro overlay is fully gone. */
+        var intro = document.getElementById('intro-overlay');
+        if(intro && !intro.classList.contains('hidden')){ return; }
+        if(!gameplay.classList.contains('tt-board-reveal-mode')){ return; }
+        gameplay.classList.remove('tt-board-reveal-mode');
+        /* Force repaint so frozen iOS GPU compositing layers update. */
+        void gameplay.offsetWidth;
+        var _ot = gameplay.style.webkitTransform;
+        gameplay.style.webkitTransform = 'translateZ(0)';
+        requestAnimationFrame(function(){ gameplay.style.webkitTransform = _ot || ''; });
+    }
+
+    function render(){
+        ensureBoardTextVisibleDuringGameplay();
         var grid = document.getElementById("scoreboard-grid");
         if(!grid){ return; }
         updateHintHubVisibility();
@@ -5233,6 +5255,7 @@ function render(){
 
     var wrongFlashTimer = null;
     var boardRevealPlayed = false;
+    var boardRevealActive = false; /* true while the flash animation is running */
     var boardRevealTimers = [];
     var boardRevealAudio = null;
     var topicRevealEnabled = false;
@@ -5257,20 +5280,31 @@ function render(){
     }
 
     function enableTopicRevealClicks(){
+        boardRevealActive = false;
         var gameplay = document.getElementById('gameplay');
         if(gameplay){
             gameplay.classList.remove('tt-board-reveal-mode');
+            /* Force a GPU repaint so iOS compositing layers don't freeze the
+               old (dark/invisible) painted state after the class is removed. */
+            void gameplay.offsetWidth;
+            var _old = gameplay.style.webkitTransform;
+            gameplay.style.webkitTransform = 'translateZ(0)';
+            requestAnimationFrame(function(){ gameplay.style.webkitTransform = _old || ''; });
         }
         topicRevealEnabled = true;
         var topics = document.querySelectorAll('.grid-row-cats .cat-cell.tt-topic-hidden');
         for(var i = 0; i < topics.length; i++){
             topics[i].classList.add('tt-topic-reveal-ready');
         }
-        /* Clean up per-cell reveal markers — tt-board-reveal-mode is gone so
-           normal board styles take over and these are no longer needed. */
+        /* Clean up per-cell reveal markers and any stuck flash classes — if the
+           cleanup timers were throttled or cancelled these may still be set. */
         var revealedCells = document.querySelectorAll('.grid-row-questions .grid-cell.tt-value-revealed');
         for(var j = 0; j < revealedCells.length; j++){
             revealedCells[j].classList.remove('tt-value-revealed');
+        }
+        var flashCells = document.querySelectorAll('.grid-row-questions .grid-cell.tt-board-intro-flash');
+        for(var k = 0; k < flashCells.length; k++){
+            flashCells[k].classList.remove('tt-board-intro-flash');
         }
     }
 
@@ -5318,6 +5352,7 @@ function render(){
         if(!cells.length){ return; }
 
         boardRevealPlayed = true;
+        boardRevealActive = true;
         clearBoardRevealTimers();
         markTopicsHiddenForReveal();
 
@@ -5372,6 +5407,13 @@ function render(){
         if(longestWave > 0){
             var revealDoneMs = animOffset + waveGap + ((longestWave - 1) * baseDelay) + 400;
             boardRevealTimers.push(setTimeout(enableTopicRevealClicks, revealDoneMs));
+            /* Safety timeout — intentionally NOT stored in boardRevealTimers so it
+               cannot be cancelled.  If the normal timer is throttled or delayed
+               (common on iOS when the tab is backgrounded briefly), this fires
+               12 seconds later and ensures the board is never permanently locked. */
+            setTimeout(function(){
+                if(boardRevealActive){ enableTopicRevealClicks(); }
+            }, revealDoneMs + 12000);
         } else {
             enableTopicRevealClicks();
         }
@@ -5646,10 +5688,14 @@ function render(){
 
     function ttFireAnswerFlash(cell){
         if(!cell){ return; }
+        if(cell.__ttFireAnswerTimer){ clearTimeout(cell.__ttFireAnswerTimer); cell.__ttFireAnswerTimer = null; }
         cell.classList.remove('tt-fire-answer-flash');
         void cell.offsetWidth;
         cell.classList.add('tt-fire-answer-flash');
-        setTimeout(function(){ cell.classList.remove('tt-fire-answer-flash'); }, 1500);
+        cell.__ttFireAnswerTimer = setTimeout(function(){
+            cell.classList.remove('tt-fire-answer-flash');
+            cell.__ttFireAnswerTimer = null;
+        }, 1700);
     }
 
     function ttAnswerBurstFlash(el){
@@ -6028,6 +6074,7 @@ function render(){
             intro.classList.remove("hidden");
         }
         boardRevealPlayed = false;
+        boardRevealActive = false;
         clearBoardRevealTimers();
         resetIntroSequence();
         refreshLayout();
@@ -6436,6 +6483,12 @@ function render(){
             document.addEventListener('click', function(e){
                 var cell = e.target && e.target.closest ? e.target.closest('.grid-row-questions .grid-cell') : null;
                 if(!cell){ return; }
+                /* Failsafe: if the board reveal mode is stuck when a clue is tapped,
+                   force-clear it so the board text is never hidden during gameplay. */
+                var gp = document.getElementById('gameplay');
+                if(gp && gp.classList.contains('tt-board-reveal-mode')){
+                    enableTopicRevealClicks();
+                }
                 var clueId = cell.id || null;
                 var entry = getClueEntry(cell || clueId);
                 if(clueId && isDailyDoubleClue(entry) && ttSoundState.dailyDoublePlayedForClue !== clueId){
@@ -6474,7 +6527,7 @@ function render(){
         buildPanel();
         patchLegacyFunctions();
         setTimeout(refreshLayout, 50);
-        window.addEventListener("resize", function(){ setTimeout(refreshLayout, 40); });
+        window.addEventListener("resize", debounce(refreshLayout, 150));
     });
 })();
 </script>
