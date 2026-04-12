@@ -482,14 +482,15 @@ kbd {
                 0 0 22px rgba(255,255,255,.45);
   }
 }
-/* Block question clicks until all topics are revealed */
-#gameplay.tt-topics-pending .grid-row-questions .cell-group {
+/* Block question clicks during board reveal animation */
+#gameplay.tt-board-reveal-mode .grid-row-questions .cell-group {
   pointer-events: none !important;
   cursor: default !important;
 }
-#gameplay.tt-topics-pending .grid-row-questions .cell-inner {
-  opacity: .45;
-  filter: brightness(.7);
+/* Block question clicks until all topics are revealed — text stays fully visible */
+#gameplay.tt-topics-pending .grid-row-questions .cell-group {
+  pointer-events: none !important;
+  cursor: default !important;
 }
 
 @keyframes ttBoardIntroFlash {
