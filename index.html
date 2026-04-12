@@ -1524,7 +1524,7 @@ kbd {
 
 /* ── Logo centered at top ── */
 .tt-finale-logo {
-  position: absolute; top: 18px; left: 50%;
+  position: absolute; top: 26px; left: 50%;
   width: min(67.4475vw, 1172px);
   display: flex; flex-direction: column; align-items: center;
   transform-origin: top center;
@@ -1567,35 +1567,55 @@ kbd {
 .tt-finale-subtitle {
   position: absolute; left: 50%; transform: translateX(-50%) translateY(10px);
   top: clamp(196px, 24vh, 280px);
+  width: min(74vw, 1120px);
+  display: flex; align-items: center; justify-content: center;
   white-space: nowrap;
-  font-size: clamp(11px, 1.1vw, 15px);
-  font-weight: 700; letter-spacing: .26em;
+  font-size: clamp(16px, 1.55vw, 24px);
+  font-weight: 800; letter-spacing: .30em;
   text-transform: uppercase; color: rgba(255,255,255,.52);
   opacity: 0;
-  transition: opacity 1.2s ease, transform 1.2s ease;
+  filter: blur(3px);
+  transition: none;
 }
 .tt-finale-subtitle::before,
 .tt-finale-subtitle::after {
   content: "";
+  flex: 1 1 auto;
   display: inline-block; vertical-align: middle;
-  width: clamp(28px, 4vw, 60px); height: 1px;
+  min-width: 44px; height: 1px;
   background: linear-gradient(90deg, transparent, rgba(255,255,255,.36));
-  margin: 0 12px;
+  margin: 0 18px;
 }
 .tt-finale-subtitle::after {
   background: linear-gradient(90deg, rgba(255,255,255,.36), transparent);
 }
 .tt-finale-subtitle.tt-fs-in {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
+  animation: ttFinalStandingsFadeIn 1.7s cubic-bezier(.16,.84,.24,1) forwards;
+}
+@keyframes ttFinalStandingsFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(12px);
+    filter: blur(3px);
+  }
+  55% {
+    opacity: .82;
+    transform: translateX(-50%) translateY(3px);
+    filter: blur(1.2px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+    filter: blur(0);
+  }
 }
 
 @media (max-width: 720px) {
-  .tt-finale-logo { width: min(82vw, 560px); top: 8px; }
+  .tt-finale-logo { width: min(82vw, 560px); top: 16px; }
   .tt-finale-logo .vice-title-top  { font-size: clamp(46px, 9vw, 76px); }
   .tt-finale-logo .vice-title-bottom { font-size: clamp(78px, 18vw, 120px); }
   .tt-finale-palm { max-width: 50vw; }
-  .tt-finale-subtitle { top: clamp(148px, 20vh, 210px); }
+  .tt-finale-subtitle { top: clamp(148px, 20vh, 210px); width: min(82vw, 760px); font-size: clamp(13px, 2.3vw, 19px); }
 }
 @media (max-width: 480px) {
   .tt-podium-stage { gap: 8px; }
@@ -6633,6 +6653,18 @@ function ensureBoardTextVisibleDuringGameplay(){
         var oldScene = document.getElementById('tt-finale-scene');
         if(oldScene){ oldScene.parentNode.removeChild(oldScene); }
 
+        function centerFinaleSubtitleBetweenLogoAndPodium(){
+            if(!logo || !subtitle || !stage){ return; }
+            var first = stage.querySelector('.tt-podium-card.tt-podium-1st');
+            var anchor = first || stage;
+            if(!anchor){ return; }
+            var logoRect = logo.getBoundingClientRect();
+            var podiumRect = anchor.getBoundingClientRect();
+            if(!logoRect || !podiumRect || !isFinite(logoRect.bottom) || !isFinite(podiumRect.top)){ return; }
+            var targetTop = Math.round((logoRect.bottom + podiumRect.top) / 2);
+            subtitle.style.top = targetTop + 'px';
+        }
+
         var scene = document.createElement('div');
         scene.id = 'tt-finale-scene';
 
@@ -6719,7 +6751,15 @@ function ensureBoardTextVisibleDuringGameplay(){
             logo.classList.add('tt-fl-in');
         }, 4200));
         finaleTimers.push(setTimeout(function(){
-            subtitle.classList.add('tt-fs-in');
+            /* Force a fresh animation start so the fade never gets skipped by batching */
+            subtitle.classList.remove('tt-fs-in');
+            subtitle.style.animation = 'none';
+            void subtitle.offsetWidth;
+            subtitle.style.animation = '';
+            requestAnimationFrame(function(){
+                subtitle.classList.add('tt-fs-in');
+            });
+            centerFinaleSubtitleBetweenLogoAndPodium();
         }, 4520));
 
         /* ── Step 5: podium rises ─────────────────────────────────────── */
@@ -6737,6 +6777,7 @@ function ensureBoardTextVisibleDuringGameplay(){
            frosted overlay. ── */
         finaleTimers.push(setTimeout(function(){
             runBehindBlurBoardFlash();
+            centerFinaleSubtitleBetweenLogoAndPodium();
         }, 7700));
 
         /* ── Step 5c: reveal screenshot button after everything settles ── */
