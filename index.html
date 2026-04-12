@@ -142,8 +142,25 @@ kbd {
   animation: tt-bg-letter-pulse 8s linear infinite;
   animation-delay: -4s;
 }
+#gameplay.tt-bg-letter-pulse-finale .cell-inner {
+  color: rgba(255,255,255,.72) !important;
+  text-shadow: none;
+  filter: brightness(1.02);
+  opacity: .90;
+}
+#gameplay.tt-bg-letter-pulse-finale .grid-row:nth-child(odd) .grid-cell:nth-child(odd) .cell-inner,
+#gameplay.tt-bg-letter-pulse-finale .grid-row:nth-child(even) .grid-cell:nth-child(even) .cell-inner {
+  animation: tt-bg-letter-pulse-finale 2.25s ease-in-out infinite;
+  animation-delay: 0s;
+}
+#gameplay.tt-bg-letter-pulse-finale .grid-row:nth-child(odd) .grid-cell:nth-child(even) .cell-inner,
+#gameplay.tt-bg-letter-pulse-finale .grid-row:nth-child(even) .grid-cell:nth-child(odd) .cell-inner {
+  animation: tt-bg-letter-pulse-finale 2.25s ease-in-out infinite;
+  animation-delay: -1.125s;
+}
 /* Freeze the board pulse in-place for the 2s intro exit pause */
 #gameplay.tt-bg-letter-pulse.tt-bg-letter-pause .cell-inner { animation-play-state: paused; }
+#gameplay.tt-bg-letter-pulse-finale.tt-bg-letter-pause .cell-inner { animation-play-state: paused; }
 /* Start clearing gameplay's own blur the moment exit begins (5 s ease dissolve).
    Overrides the default .9 s transition on #gameplay. */
 #gameplay.tt-blur-dissolve {
@@ -161,6 +178,20 @@ kbd {
     color: #fff;
     text-shadow: 0 0 14px rgba(255,255,255,.98), 0 0 34px rgba(255,255,255,.62);
     filter: brightness(2.5);
+    opacity: 1;
+  }
+}
+@keyframes tt-bg-letter-pulse-finale {
+  0%, 100% {
+    color: rgba(255,255,255,.72);
+    text-shadow: none;
+    filter: brightness(1.02);
+    opacity: .90;
+  }
+  50% {
+    color: #fff;
+    text-shadow: 0 0 22px rgba(255,255,255,.98), 0 0 56px rgba(255,220,120,.74);
+    filter: brightness(3.0) saturate(1.12);
     opacity: 1;
   }
 }
@@ -5348,7 +5379,7 @@ function ensureBoardTextVisibleDuringGameplay(){
     function stopBackgroundLetterPulse(){
         var gameplay = document.getElementById('gameplay');
         if(!gameplay){ return; }
-        gameplay.classList.remove('tt-bg-letter-pulse', 'tt-bg-letter-pause');
+        gameplay.classList.remove('tt-bg-letter-pulse', 'tt-bg-letter-pulse-finale', 'tt-bg-letter-pause');
     }
 
     function updateIntroMusicButton(){
@@ -6485,47 +6516,15 @@ function ensureBoardTextVisibleDuringGameplay(){
         }
     }
 
-    /* Repeating intro-style checker-wave glow played through the blur overlay.
-       Uses tt-board-intro-flash (same brightness/glow as the intro reveal) so it
-       reads as a warm pulsing light behind the frosted glass.  No audio. */
+    /* Looping ambient board pulse behind finale blur.
+       This intentionally matches the intro-behind-overlay effect used after
+       pressing Load (tt-bg-letter-pulse), and runs continuously. */
     function runBehindBlurBoardFlash(){
-        var cells = Array.prototype.slice.call(document.querySelectorAll(
-            '.grid-row-cats .grid-cell, .grid-row-questions .grid-cell'));
-        if(!cells.length){ return; }
-
-        var PASSES     = 3;
-        var animOffset = 200;   /* ms before first cell fires in each pass */
-        var baseDelay  = 140;   /* ms between cells within a wave */
-        var waveGap    = 110;   /* ms between even/odd checker waves */
-        /* Duration of one full pass: offset + gap + all cells + anim tail */
-        var passDur    = animOffset + waveGap + (Math.ceil(cells.length / 2) - 1) * baseDelay + 380;
-        var passGap    = passDur + 320;   /* start-to-start spacing between passes */
-
-        for(var p = 0; p < PASSES; p++){
-            (function(pass){
-                var even = [], odd = [];
-                cells.forEach(function(cell){
-                    var row = parseInt(cell.getAttribute('data-row') || '0', 10);
-                    var col = parseInt(cell.getAttribute('data-col') || '0', 10);
-                    ((row + col) % 2 === 0 ? even : odd).push(cell);
-                });
-                /* Shuffle each pass independently so no two passes look identical */
-                var waves = [shuffleArray(even.slice()), shuffleArray(odd.slice())];
-                waves.forEach(function(group, wi){
-                    group.forEach(function(cell, ci){
-                        var d = pass * passGap + animOffset + wi * waveGap + ci * baseDelay;
-                        finaleTimers.push(setTimeout(function(){
-                            cell.classList.remove('tt-board-intro-flash');
-                            void cell.offsetWidth;
-                            cell.classList.add('tt-board-intro-flash');
-                            finaleTimers.push(setTimeout(function(){
-                                cell.classList.remove('tt-board-intro-flash');
-                            }, 333));
-                        }, d));
-                    });
-                });
-            })(p);
-        }
+        var gameplay = document.getElementById('gameplay');
+        if(!gameplay){ return; }
+        gameplay.classList.remove('tt-bg-letter-pulse');
+        gameplay.classList.remove('tt-bg-letter-pause');
+        gameplay.classList.add('tt-bg-letter-pulse-finale');
     }
 
     /* ── Screenshot helpers ─────────────────────────────────────────── */
