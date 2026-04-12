@@ -5952,12 +5952,6 @@ function ensureBoardTextVisibleDuringGameplay(){
         var top3   = ranked.slice(0, Math.min(3, ranked.length));
         var others = ranked.slice(3);
 
-        /* Close modal */
-        try {
-            var qm = document.getElementById('question-modal');
-            if(qm && typeof qm.hide === 'function'){ qm.hide(); }
-        } catch(e){}
-
         /* Victory audio */
         var aud = ensureFinaleAudio();
         if(aud){
@@ -6022,7 +6016,13 @@ function ensureBoardTextVisibleDuringGameplay(){
     function checkAndTriggerFinale(){
         if(finaleTriggered){ return; }
         if(totalClues() > 0 && answeredCount() >= totalClues()){
-            finaleTimers.push(setTimeout(runFinaleSequence, 1800));
+            /* Close the modal immediately so the gameboard is visible first */
+            try {
+                var qm = document.getElementById('question-modal');
+                if(qm && typeof qm.hide === 'function'){ qm.hide(); }
+            } catch(e){}
+            /* Brief pause to let the board show, then launch finale */
+            finaleTimers.push(setTimeout(runFinaleSequence, 900));
         }
     }
     /* ─────────────────────────────────────────────────────────────── */
