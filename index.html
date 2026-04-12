@@ -1490,7 +1490,7 @@ kbd {
 
 /* ─── Finale Scene (unified backdrop + palms + logo + podium) ─────── */
 #tt-finale-scene {
-  position: fixed; inset: 0; z-index: 10100; pointer-events: none; overflow: hidden;
+  position: fixed; inset: 0; z-index: 14110; pointer-events: none; overflow: hidden;
 }
 .tt-finale-backdrop {
   position: absolute; inset: 0;
@@ -1600,38 +1600,64 @@ kbd {
 @media (max-width: 480px) {
   .tt-podium-stage { gap: 8px; }
 }
-/* ─── Screenshot button ───────────────────────────────────────────── */
+/* ─── Screenshot rail button (finale) ────────────────────────────── */
+@keyframes ttScreenshotPulse {
+  0%, 100% {
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 18px 34px rgba(0,0,0,0.30), 0 0 0 rgba(103,156,255,0);
+    border-color: rgba(255,255,255,0.18);
+  }
+  50% {
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), 0 18px 34px rgba(0,0,0,0.30), 0 0 24px rgba(103,156,255,0.38);
+    border-color: rgba(161,198,255,0.56);
+  }
+}
 .tt-screenshot-btn {
-  position: absolute;
-  bottom: clamp(72px, 12vh, 120px);
-  right: clamp(14px, 2.4vw, 36px);
-  z-index: 3;
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 186px);
+  right: 14px;
+  z-index: 14011;
   pointer-events: auto;
-  display: inline-flex; align-items: center; gap: 7px;
-  padding: 10px 20px 10px 16px;
-  background: rgba(8, 12, 44, 0.70);
-  border: 1px solid rgba(255,255,255,.22);
-  border-radius: 999px;
-  color: rgba(255,255,255,.90);
-  font-size: 13px; font-weight: 700; letter-spacing: .04em;
+  width: 74px; height: 74px; padding: 0;
+  border-radius: 22px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.03) 100%), linear-gradient(180deg, rgba(14,29,115,0.94) 0%, rgba(8,19,79,0.98) 100%);
+  color: #fff;
   cursor: pointer;
-  backdrop-filter: blur(10px) saturate(.9);
-  -webkit-backdrop-filter: blur(10px) saturate(.9);
+  display: inline-flex; align-items: center; justify-content: center;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 18px 34px rgba(0,0,0,0.30);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  animation: ttScreenshotPulse 1.75s ease-in-out infinite;
   opacity: 0; transform: translateY(10px);
   transition: opacity .45s ease, transform .45s ease,
-              background .14s ease, border-color .14s ease, color .14s ease;
+              background .18s ease, border-color .18s ease, box-shadow .18s ease;
   user-select: none; -webkit-user-select: none;
-  white-space: nowrap;
 }
 .tt-screenshot-btn.tt-ssb-in { opacity: 1; transform: translateY(0); }
 .tt-screenshot-btn:hover, .tt-screenshot-btn:focus-visible {
-  background: rgba(28, 42, 130, 0.82);
-  border-color: rgba(255,255,255,.40);
-  color: #fff; outline: none;
+  animation-play-state: paused;
+  outline: none;
+  transform: translateY(-1px);
+  border-color: rgba(255,255,255,0.34);
+  background: linear-gradient(180deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.05) 100%), linear-gradient(180deg, rgba(31,56,178,0.98) 0%, rgba(16,34,131,0.98) 100%);
 }
 .tt-screenshot-btn:active { transform: translateY(0) scale(.95); }
-.tt-screenshot-btn .tt-ssb-icon { font-size: 16px; line-height: 1; }
-.tt-screenshot-btn.tt-ssb-copied { border-color: rgba(100,220,140,.60); color: rgba(130,240,160,.96); }
+.tt-screenshot-btn .tt-ssb-icon { width: 25px; height: 25px; color: #fff; }
+.tt-screenshot-btn .tt-ssb-icon svg { width: 100%; height: 100%; display: block; }
+.tt-screenshot-btn .tt-ssb-label { display: none; }
+.tt-screenshot-btn.tt-ssb-busy {
+  animation-play-state: paused;
+  border-color: rgba(255,215,124,.70);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.20), 0 18px 34px rgba(0,0,0,0.30), 0 0 18px rgba(255,214,112,.32);
+}
+.tt-screenshot-btn.tt-ssb-copied {
+  animation-play-state: paused;
+  border-color: rgba(100,220,140,.60);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.20), 0 18px 34px rgba(0,0,0,0.30), 0 0 20px rgba(130,240,160,.34);
+}
+@media (max-width: 720px) {
+  .tt-screenshot-btn { top: calc(env(safe-area-inset-top, 0px) + 170px); right: 12px; width: 70px; height: 70px; }
+  .tt-screenshot-btn .tt-ssb-icon { width: 24px; height: 24px; }
+}
 
 /* ─── Full-screen camera flash overlay ────────────────────────────── */
 @keyframes ttCameraFlash {
@@ -1775,7 +1801,7 @@ kbd {
 
 /* Draw tools hub */
 #draw-tools-hub {
-  position: fixed; top: 14px; right: 14px; width: 74px; z-index: 13060;
+  position: fixed; top: 14px; right: 14px; width: 74px; z-index: 14120;
   display: flex; flex-direction: column; align-items: flex-end;
   padding-right: 0; gap: 12px;
   opacity: 0; visibility: hidden; pointer-events: none;
@@ -1801,8 +1827,8 @@ kbd {
   backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, opacity .18s ease;
 }
-#draw-tools-trigger { opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(-4px) scale(0.94); }
-#draw-tools-hub.question-active #draw-tools-trigger { opacity: 0.76; visibility: visible; pointer-events: auto; transform: none; }
+#draw-tools-trigger { display: none; opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(-4px) scale(0.94); }
+#draw-tools-hub.question-active #draw-tools-trigger { display: inline-flex; opacity: 0.76; visibility: visible; pointer-events: auto; transform: none; }
 #draw-tools-hub:hover .draw-rail-btn, #draw-tools-hub:hover #draw-tools-trigger,
 #draw-tools-hub.open .draw-rail-btn, #draw-tools-hub.open #draw-tools-trigger,
 .draw-rail-btn:focus, #draw-tools-trigger:focus { opacity: 1; }
@@ -3494,7 +3520,7 @@ if (CLEAN_MODE) {
 
 
             window.addEventListener("keydown", function(e){
-                var ESC = 27
+                var BACKTICK = 192;
                 var SPACE = 32
                 var ENTER = 13;
                 var LEFT = 37;
@@ -3548,7 +3574,7 @@ if (CLEAN_MODE) {
                 }
 
                 if(active_team_number != 0){
-                    if(e.keyCode == ESC){
+                    if(e.keyCode == BACKTICK){
                         //active_team_number = 0;
                         deactiveTeam();
                         //active_team = null;
@@ -3561,7 +3587,7 @@ if (CLEAN_MODE) {
                         handlePoints.call(active_team.querySelector(".minus"), e);
                     }
                 } else if(modal.is_open){
-                    if(e.keyCode == ESC){
+                    if(e.keyCode == BACKTICK){
                         e.preventDefault();
                         modal.hide();
                     } else if(e.keyCode == SPACE){
@@ -6528,12 +6554,12 @@ function ensureBoardTextVisibleDuringGameplay(){
         setTimeout(function(){ if(flash.parentNode){ flash.parentNode.removeChild(flash); } }, 620);
 
         /* 2 — Update button state while processing */
-        if(btn){ btn.querySelector('.tt-ssb-label').textContent = 'Capturing…'; }
+        if(btn){ btn.classList.add('tt-ssb-busy'); }
 
         /* 3 — Render with html2canvas, excluding the button itself */
         loadHtml2Canvas(function(h2c){
             if(!h2c){
-                if(btn){ btn.querySelector('.tt-ssb-label').textContent = '📷 Screenshot'; }
+                if(btn){ btn.classList.remove('tt-ssb-busy'); }
                 return;
             }
             h2c(document.body, {
@@ -6544,11 +6570,10 @@ function ensureBoardTextVisibleDuringGameplay(){
                 canvas.toBlob(function(blob){
                     var resetBtn = function(copied){
                         if(!btn){ return; }
+                        btn.classList.remove('tt-ssb-busy');
                         btn.classList.toggle('tt-ssb-copied', !!copied);
-                        btn.querySelector('.tt-ssb-label').textContent = copied ? '✓ Copied!' : '📷 Screenshot';
                         setTimeout(function(){
                             btn.classList.remove('tt-ssb-copied');
-                            btn.querySelector('.tt-ssb-label').textContent = '📷 Screenshot';
                         }, 2200);
                     };
                     try {
@@ -6566,7 +6591,7 @@ function ensureBoardTextVisibleDuringGameplay(){
                             });
                     } catch(e){ resetBtn(false); }
                 }, 'image/png');
-            }).catch(function(){ if(btn){ btn.querySelector('.tt-ssb-label').textContent = '📷 Screenshot'; } });
+            }).catch(function(){ if(btn){ btn.classList.remove('tt-ssb-busy'); } });
         });
     }
     /* ────────────────────────────────────────────────────────────────── */
@@ -6664,8 +6689,14 @@ function ensureBoardTextVisibleDuringGameplay(){
         ssBtn.type = 'button';
         ssBtn.className = 'tt-screenshot-btn';
         ssBtn.setAttribute('aria-label', 'Screenshot final standings to clipboard');
-        ssBtn.innerHTML = '<span class="tt-ssb-icon">📷</span><span class="tt-ssb-label">Screenshot</span>';
+        ssBtn.title = 'Screenshot';
+        ssBtn.innerHTML = '<span class="tt-ssb-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 6.5 8.3 5h7.4L17 6.5H20a2 2 0 0 1 2 2v9A2.5 2.5 0 0 1 19.5 20h-15A2.5 2.5 0 0 1 2 17.5v-9a2 2 0 0 1 2-2h3Zm4.5 3A4.5 4.5 0 1 0 16 14a4.5 4.5 0 0 0-4.5-4.5Zm0 2A2.5 2.5 0 1 1 9 14a2.5 2.5 0 0 1 2.5-2.5Z"/></svg></span><span class="tt-ssb-label">Screenshot</span>';
         ssBtn.addEventListener('click', function(){ captureFinaleScreenshot(ssBtn); });
+        ssBtn.addEventListener('touchend', function(e){
+            e.preventDefault();
+            e.stopPropagation();
+            captureFinaleScreenshot(ssBtn);
+        }, { passive: false });
         scene.appendChild(ssBtn);
 
         /* Inject scene after board flash completes (~3050ms), giving it 200ms
@@ -8907,6 +8938,59 @@ window.transferTriviaDeck = {};
       menu.setAttribute('aria-hidden', state.open ? 'false' : 'true');
     }
 
+    function showResetWarning(onConfirm){
+      var existing = document.getElementById('tt-reset-confirm');
+      if (existing) {
+        existing.style.display = 'flex';
+        return;
+      }
+      var overlay = document.createElement('div');
+      overlay.id = 'tt-reset-confirm';
+      overlay.setAttribute('role', 'dialog');
+      overlay.setAttribute('aria-modal', 'true');
+      overlay.setAttribute('aria-label', 'Confirm reset');
+      overlay.style.cssText = ''
+        + 'position:fixed;inset:0;z-index:20050;display:flex;align-items:center;justify-content:center;'
+        + 'background:rgba(2,6,22,.68);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);';
+
+      var panel = document.createElement('div');
+      panel.style.cssText = ''
+        + 'width:min(420px,calc(100vw - 34px));border-radius:18px;padding:18px 18px 14px;'
+        + 'border:1px solid rgba(255,255,255,.22);background:linear-gradient(180deg,rgba(14,27,99,.98),rgba(8,16,66,.98));'
+        + 'box-shadow:0 24px 44px rgba(0,0,0,.45);color:#fff;';
+      panel.innerHTML = ''
+        + '<div style="font-size:16px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;margin-bottom:10px;">Reset Game?</div>'
+        + '<div style="font-size:14px;line-height:1.4;color:rgba(255,255,255,.88);margin-bottom:14px;">This will clear scores and return to the intro screen.</div>'
+        + '<div style="display:flex;gap:10px;justify-content:flex-end;">'
+        + '  <button type="button" id="tt-reset-cancel" style="min-width:100px;height:36px;border-radius:10px;border:1px solid rgba(255,255,255,.24);background:rgba(255,255,255,.08);color:#fff;font-weight:700;cursor:pointer;">Cancel</button>'
+        + '  <button type="button" id="tt-reset-confirm-ok" style="min-width:120px;height:36px;border-radius:10px;border:1px solid rgba(255,231,132,.6);background:linear-gradient(90deg,#ffd743,#ffe97e);color:#1d2458;font-weight:800;cursor:pointer;">Reset Game</button>'
+        + '</div>';
+      overlay.appendChild(panel);
+      document.body.appendChild(overlay);
+
+      function closeDialog(){
+        if (overlay && overlay.parentNode) { overlay.parentNode.removeChild(overlay); }
+        document.removeEventListener('keydown', onKeyDown, true);
+      }
+      function onKeyDown(ev){
+        if (ev.key === 'Escape') {
+          ev.preventDefault();
+          closeDialog();
+        }
+      }
+      overlay.addEventListener('click', function(ev){
+        if (ev.target === overlay) { closeDialog(); }
+      });
+      panel.querySelector('#tt-reset-cancel').addEventListener('click', function(){
+        closeDialog();
+      });
+      panel.querySelector('#tt-reset-confirm-ok').addEventListener('click', function(){
+        closeDialog();
+        if (typeof onConfirm === 'function') { onConfirm(); }
+      });
+      document.addEventListener('keydown', onKeyDown, true);
+    }
+
     if (fullscreenBtn) {
       fullscreenBtn.addEventListener('click', function(e){
         e.preventDefault();
@@ -8921,13 +9005,15 @@ window.transferTriviaDeck = {};
     }
 
     if (resetBtn) {
-      resetBtn.addEventListener('click', function(e){
+      function onResetPress(e){
         e.preventDefault();
         e.stopPropagation();
-        if (confirm('Reset the full game and return to the instructions screen?')) {
+        showResetWarning(function(){
           if (typeof window.resetGame === 'function') { window.resetGame(); }
-        }
-      });
+        });
+      }
+      resetBtn.addEventListener('click', onResetPress);
+      resetBtn.addEventListener('touchend', onResetPress, { passive: false });
     }
 
     function clearInk(){
