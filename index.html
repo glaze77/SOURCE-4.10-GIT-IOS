@@ -1600,6 +1600,82 @@ kbd {
 @media (max-width: 480px) {
   .tt-podium-stage { gap: 8px; }
 }
+/* ─── Screenshot button ───────────────────────────────────────────── */
+.tt-screenshot-btn {
+  position: absolute;
+  bottom: clamp(72px, 12vh, 120px);
+  right: clamp(14px, 2.4vw, 36px);
+  z-index: 3;
+  pointer-events: auto;
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 10px 20px 10px 16px;
+  background: rgba(8, 12, 44, 0.70);
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: 999px;
+  color: rgba(255,255,255,.90);
+  font-size: 13px; font-weight: 700; letter-spacing: .04em;
+  cursor: pointer;
+  backdrop-filter: blur(10px) saturate(.9);
+  -webkit-backdrop-filter: blur(10px) saturate(.9);
+  opacity: 0; transform: translateY(10px);
+  transition: opacity .45s ease, transform .45s ease,
+              background .14s ease, border-color .14s ease, color .14s ease;
+  user-select: none; -webkit-user-select: none;
+  white-space: nowrap;
+}
+.tt-screenshot-btn.tt-ssb-in { opacity: 1; transform: translateY(0); }
+.tt-screenshot-btn:hover, .tt-screenshot-btn:focus-visible {
+  background: rgba(28, 42, 130, 0.82);
+  border-color: rgba(255,255,255,.40);
+  color: #fff; outline: none;
+}
+.tt-screenshot-btn:active { transform: translateY(0) scale(.95); }
+.tt-screenshot-btn .tt-ssb-icon { font-size: 16px; line-height: 1; }
+.tt-screenshot-btn.tt-ssb-copied { border-color: rgba(100,220,140,.60); color: rgba(130,240,160,.96); }
+
+/* ─── Full-screen camera flash overlay ────────────────────────────── */
+@keyframes ttCameraFlash {
+  0%   { opacity: 0; }
+  6%   { opacity: .88; }
+  100% { opacity: 0; }
+}
+#tt-camera-flash {
+  position: fixed; inset: 0; z-index: 999999;
+  background: #fff; pointer-events: none;
+  animation: ttCameraFlash .58s ease-out forwards;
+}
+/* ─── Clipboard capture toast ──────────────────────────────────────── */
+#tt-capture-toast {
+  position: fixed;
+  top: 28px; left: 50%;
+  transform: translateX(-50%) translateY(-18px);
+  z-index: 20000;
+  display: flex; align-items: center; gap: 14px;
+  padding: 13px 22px 13px 18px;
+  border-radius: 16px;
+  border: 1px solid rgba(96,220,148,.42);
+  background: linear-gradient(160deg, rgba(14,30,96,.97) 0%, rgba(6,16,64,.97) 100%);
+  box-shadow: 0 14px 36px rgba(0,0,0,.48), 0 0 28px rgba(72,200,120,.10);
+  backdrop-filter: blur(14px) saturate(.9);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .30s ease, transform .32s cubic-bezier(.16,.84,.24,1);
+  white-space: nowrap;
+}
+#tt-capture-toast.tt-toast-in {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+.tt-capture-toast-icon { font-size: 20px; line-height: 1; }
+.tt-capture-toast-body { display: flex; flex-direction: column; gap: 2px; }
+.tt-capture-toast-title {
+  font-size: 13px; font-weight: 800; letter-spacing: .035em;
+  color: rgba(136,244,174,.96);
+}
+.tt-capture-toast-sub {
+  font-size: 11px; font-weight: 600; letter-spacing: .02em;
+  color: rgba(255,255,255,.52);
+}
 /* ─────────────────────────────────────────────────────────────────── */
 
 #tt-victory-lock-banner {
@@ -2265,13 +2341,18 @@ body.tt-drawing-active #tt-meter-stage * { pointer-events: auto; }
 }
 
 /* Global sound/player panels */
+.tt-global-sound-layer, .tt-global-player-layer { display: none; }
+.tt-global-sound-layer.open, .tt-global-player-layer.open { display: block; }
 .tt-global-sound-panel, .tt-global-player-panel {
   position: fixed; z-index: 14100;
+  left: 50%; top: 50%; transform: translate(-50%, -50%);
   border-radius: 18px; border: 1px solid rgba(255,255,255,.18);
   background: linear-gradient(180deg, rgba(11,22,88,.97), rgba(6,14,60,.97));
   box-shadow: 0 20px 44px rgba(0,0,0,.38); padding: 18px 20px 16px;
   color: #fff;
 }
+.tt-global-sound-panel { width: min(520px, calc(100vw - 44px)); }
+.tt-global-player-panel { width: min(480px, calc(100vw - 44px)); }
 .tt-global-sound-close, .tt-global-player-close {
   width: 34px; height: 34px; border: 1px solid rgba(255,255,255,.18);
   border-radius: 8px; background: rgba(255,255,255,.08); color: #fff;
@@ -2279,6 +2360,31 @@ body.tt-drawing-active #tt-meter-stage * { pointer-events: auto; }
 }
 #tt-global-sound-backdrop, #tt-global-player-backdrop {
   position: fixed; inset: 0; z-index: 14099; background: transparent;
+}
+/* Global player panel inner elements — mirrors intro-player-panel styling */
+.tt-global-player-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin-bottom: 14px;
+}
+.tt-global-player-title { font-size: 15px; font-weight: 800; color: #fff; letter-spacing: .04em; }
+.tt-global-player-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
+.tt-global-player-row { display: flex; align-items: center; gap: 8px; }
+.tt-global-player-row label {
+  font-size: 12px; font-weight: 700; color: rgba(255,255,255,.72); min-width: 22px; text-align: right;
+}
+.tt-global-player-row input[type="text"] {
+  flex: 1; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.16);
+  border-radius: 10px; color: #fff; padding: 8px 10px; font-size: 13px; font-weight: 600;
+}
+.tt-global-player-row input[type="text"]::placeholder { color: rgba(255,255,255,.38); }
+.tt-global-player-actions { display: flex; justify-content: center; gap: 12px; margin-top: 16px; }
+.tt-global-player-save-btn {
+  border: 1px solid rgba(255,234,107,.6); background: linear-gradient(90deg, var(--accent), #ffea6b);
+  color: #1e2459; border-radius: 10px; padding: 7px 12px; font-size: 12px; font-weight: 800; letter-spacing: .03em; cursor: pointer;
+}
+.tt-global-player-cancel-btn {
+  border: 1px solid rgba(255,255,255,.28); background: rgba(255,255,255,.1);
+  color: #fff; border-radius: 10px; padding: 7px 12px; font-size: 12px; font-weight: 700; cursor: pointer;
 }
 
 /* ─── Intro responsive: scale content to fit iPhone without scroll ─── */
@@ -6376,10 +6482,102 @@ function ensureBoardTextVisibleDuringGameplay(){
         }
     }
 
+    /* ── Screenshot helpers ─────────────────────────────────────────── */
+    var html2canvasLoaded = false;
+    function loadHtml2Canvas(cb){
+        if(window.html2canvas){ cb(window.html2canvas); return; }
+        if(html2canvasLoaded){ /* already loading — wait */ setTimeout(function(){ loadHtml2Canvas(cb); }, 200); return; }
+        html2canvasLoaded = true;
+        var s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+        s.onload  = function(){ cb(window.html2canvas); };
+        s.onerror = function(){ cb(null); };
+        document.head.appendChild(s);
+    }
+
+    var captureToastTimer = null;
+    function showCaptureToast(){
+        var toast = document.getElementById('tt-capture-toast');
+        if(!toast){
+            toast = document.createElement('div');
+            toast.id = 'tt-capture-toast';
+            toast.setAttribute('aria-live', 'polite');
+            toast.innerHTML = '<span class="tt-capture-toast-icon">📋</span>'
+                + '<div class="tt-capture-toast-body">'
+                + '<div class="tt-capture-toast-title">Image copied to clipboard</div>'
+                + '<div class="tt-capture-toast-sub">Ready to paste &nbsp;·&nbsp; Ctrl+V &nbsp;/&nbsp; ⌘V</div>'
+                + '</div>';
+            document.body.appendChild(toast);
+        }
+        if(captureToastTimer){ clearTimeout(captureToastTimer); captureToastTimer = null; }
+        toast.classList.remove('tt-toast-in');
+        void toast.offsetWidth; /* force reflow so transition re-fires */
+        toast.classList.add('tt-toast-in');
+        captureToastTimer = setTimeout(function(){
+            toast.classList.remove('tt-toast-in');
+            captureToastTimer = null;
+        }, 3400);
+    }
+
+    function captureFinaleScreenshot(btn){
+        /* 1 — Instant: sound + flash */
+        try { var snd = new Audio('media/Audio/screencapture/camera_click.mp3'); snd.play().catch(function(){}); } catch(e){}
+        var flash = document.createElement('div');
+        flash.id = 'tt-camera-flash';
+        document.body.appendChild(flash);
+        setTimeout(function(){ if(flash.parentNode){ flash.parentNode.removeChild(flash); } }, 620);
+
+        /* 2 — Update button state while processing */
+        if(btn){ btn.querySelector('.tt-ssb-label').textContent = 'Capturing…'; }
+
+        /* 3 — Render with html2canvas, excluding the button itself */
+        loadHtml2Canvas(function(h2c){
+            if(!h2c){
+                if(btn){ btn.querySelector('.tt-ssb-label').textContent = '📷 Screenshot'; }
+                return;
+            }
+            h2c(document.body, {
+                useCORS: true, allowTaint: true, logging: false,
+                scale: Math.min(window.devicePixelRatio || 1, 2),
+                ignoreElements: function(el){ return el === btn || el.id === 'tt-camera-flash'; }
+            }).then(function(canvas){
+                canvas.toBlob(function(blob){
+                    var resetBtn = function(copied){
+                        if(!btn){ return; }
+                        btn.classList.toggle('tt-ssb-copied', !!copied);
+                        btn.querySelector('.tt-ssb-label').textContent = copied ? '✓ Copied!' : '📷 Screenshot';
+                        setTimeout(function(){
+                            btn.classList.remove('tt-ssb-copied');
+                            btn.querySelector('.tt-ssb-label').textContent = '📷 Screenshot';
+                        }, 2200);
+                    };
+                    try {
+                        navigator.clipboard.write([new ClipboardItem({'image/png': blob})])
+                            .then(function(){ resetBtn(true); showCaptureToast(); })
+                            .catch(function(){
+                                /* Clipboard failed — fall back to download */
+                                var url = URL.createObjectURL(blob);
+                                var a = document.createElement('a');
+                                a.href = url; a.download = 'transfer-trivia-standings.png';
+                                document.body.appendChild(a); a.click();
+                                document.body.removeChild(a);
+                                setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+                                resetBtn(false);
+                            });
+                    } catch(e){ resetBtn(false); }
+                }, 'image/png');
+            }).catch(function(){ if(btn){ btn.querySelector('.tt-ssb-label').textContent = '📷 Screenshot'; } });
+        });
+    }
+    /* ────────────────────────────────────────────────────────────────── */
+
     function runFinaleSequence(){
         if(finaleTriggered){ return; }
         finaleTriggered = true;
         clearFinaleTimers();
+
+        /* Start loading html2canvas early so it's ready by the time the user clicks */
+        loadHtml2Canvas(function(){});
 
         /* Sort players by score descending */
         var ranked = state.players.map(function(p, i){
@@ -6461,6 +6659,15 @@ function ensureBoardTextVisibleDuringGameplay(){
         });
         scene.appendChild(stage);
 
+        /* Screenshot button — hidden until podium fully settles */
+        var ssBtn = document.createElement('button');
+        ssBtn.type = 'button';
+        ssBtn.className = 'tt-screenshot-btn';
+        ssBtn.setAttribute('aria-label', 'Screenshot final standings to clipboard');
+        ssBtn.innerHTML = '<span class="tt-ssb-icon">📷</span><span class="tt-ssb-label">Screenshot</span>';
+        ssBtn.addEventListener('click', function(){ captureFinaleScreenshot(ssBtn); });
+        scene.appendChild(ssBtn);
+
         /* Inject scene after board flash completes (~3050ms), giving it 200ms
            of breathing room before the backdrop transition begins at 3300ms. */
         finaleTimers.push(setTimeout(function(){
@@ -6500,6 +6707,11 @@ function ensureBoardTextVisibleDuringGameplay(){
         finaleTimers.push(setTimeout(function(){
             runBehindBlurBoardFlash();
         }, 7700));
+
+        /* ── Step 5c: reveal screenshot button after everything settles ── */
+        finaleTimers.push(setTimeout(function(){
+            ssBtn.classList.add('tt-ssb-in');
+        }, 8800));
 
         /* ── Step 6: participation badges (4th+ players) ─────────────── */
         finaleTimers.push(setTimeout(function(){
