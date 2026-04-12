@@ -463,11 +463,33 @@ kbd {
 .grid-row-cats .cat-cell.tt-topic-hidden.tt-topic-reveal-ready {
   cursor: pointer;
 }
-.grid-row-cats .cat-cell.tt-topic-hidden.tt-topic-reveal-ready:hover {
-  filter: brightness(1.08);
-}
 .grid-row-cats .cat-cell.tt-topic-revealed {
   opacity: 1;
+}
+/* Pulse the outer block directly — avoids overflow:hidden clipping */
+.grid-row-cats .grid-cell.tt-topic-reveal-ready {
+  animation: topicRevealPulse 1.3s ease-in-out infinite;
+  cursor: pointer;
+}
+@keyframes topicRevealPulse {
+  0%, 100% {
+    filter: brightness(1);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.07), 0 12px 26px rgba(0,0,0,.26);
+  }
+  50% {
+    filter: brightness(1.55);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.07), 0 12px 26px rgba(0,0,0,.26),
+                0 0 22px rgba(255,255,255,.45);
+  }
+}
+/* Block question clicks until all topics are revealed */
+#gameplay.tt-topics-pending .grid-row-questions .cell-group {
+  pointer-events: none !important;
+  cursor: default !important;
+}
+#gameplay.tt-topics-pending .grid-row-questions .cell-inner {
+  opacity: .45;
+  filter: brightness(.7);
 }
 
 @keyframes ttBoardIntroFlash {
@@ -1263,28 +1285,55 @@ kbd {
 #tt-victory-lock-banner {
   position: fixed;
   left: 50%;
-  bottom: calc(var(--app-bottom-bar-h) + 20px);
-  transform: translateX(-50%) translateY(14px) scale(.98);
+  top: 50%;
+  transform: translate(-50%, -50%) scale(.92);
   z-index: 10020;
-  padding: 10px 18px;
-  border-radius: 999px;
-  border: 1px solid rgba(255,232,126,.62);
-  background: linear-gradient(180deg, rgba(34,50,145,.95), rgba(13,24,92,.95));
+  padding: 28px 52px;
+  border-radius: 24px;
+  border: 2px solid rgba(255,232,126,.75);
+  background: linear-gradient(180deg, rgba(34,50,145,.97), rgba(13,24,92,.97));
   color: #fff1b3;
-  font-size: 14px;
-  font-weight: 800;
-  letter-spacing: .05em;
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: .07em;
   text-transform: uppercase;
-  box-shadow: 0 14px 34px rgba(0,0,0,.34), 0 0 24px rgba(255,232,126,.22);
+  text-align: center;
+  box-shadow: 0 24px 64px rgba(0,0,0,.55), 0 0 48px rgba(255,232,126,.32);
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transition: opacity .3s ease, transform .3s ease, visibility .3s ease;
+  transition: opacity .35s ease, transform .35s ease, visibility .35s ease;
 }
 #tt-victory-lock-banner.visible {
   opacity: 1;
   visibility: visible;
-  transform: translateX(-50%) translateY(0) scale(1);
+  transform: translate(-50%, -50%) scale(1);
+  animation: victoryBannerGlow 1.1s ease-in-out infinite;
+}
+@keyframes victoryBannerGlow {
+  0%, 100% {
+    box-shadow: 0 24px 64px rgba(0,0,0,.55),
+                0 0 28px rgba(255,232,126,.40),
+                0 0 0 2px rgba(255,232,126,.55);
+    border-color: rgba(255,232,126,.75);
+    background: linear-gradient(180deg, rgba(34,50,145,.97), rgba(13,24,92,.97));
+  }
+  33% {
+    box-shadow: 0 24px 64px rgba(0,0,0,.55),
+                0 0 56px rgba(255,210,0,.85),
+                0 0 90px rgba(255,140,0,.40),
+                0 0 0 3px rgba(255,230,0,.95);
+    border-color: rgba(255,230,0,.98);
+    background: linear-gradient(180deg, rgba(50,68,170,.98), rgba(20,36,120,.98));
+  }
+  66% {
+    box-shadow: 0 24px 64px rgba(0,0,0,.55),
+                0 0 38px rgba(255,180,0,.65),
+                0 0 70px rgba(255,100,0,.28),
+                0 0 0 2px rgba(255,200,80,.75);
+    border-color: rgba(255,200,80,.80);
+    background: linear-gradient(180deg, rgba(34,50,145,.97), rgba(13,24,92,.97));
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -3879,7 +3928,7 @@ if (CLEAN_MODE) {
 
     var victoryLockBannerTimer = null;
     var victoryLockFlashTimer = null;
-    var VICTORY_LOCK_BANNER_MS = 2600;
+    var VICTORY_LOCK_BANNER_MS = 5500;
     var VICTORY_LOCK_FLASH_MS  = 1300;
 
     function getRemainingBoardPoints(){
@@ -3968,9 +4017,10 @@ if (CLEAN_MODE) {
             }, VICTORY_LOCK_FLASH_MS);
         }
 
-        if(typeof playCorrectSound === "function"){
-            playCorrectSound();
-        }
+        (function(){
+            var snd = new Audio("media/Audio/flawless.mp3");
+            snd.play().catch(function(){});
+        })();
     }
 
     function updateVictoryLockStatus(){
@@ -5271,11 +5321,14 @@ function ensureBoardTextVisibleDuringGameplay(){
         var gameplay = document.getElementById('gameplay');
         if(gameplay){
             gameplay.classList.add('tt-board-reveal-mode');
+            gameplay.classList.remove('tt-topics-pending');
         }
         var topics = document.querySelectorAll('.grid-row-cats .cat-cell');
         for(var i = 0; i < topics.length; i++){
             topics[i].classList.add('tt-topic-hidden');
             topics[i].classList.remove('tt-topic-revealed', 'tt-topic-reveal-ready');
+            var parentCell = topics[i].closest('.grid-cell');
+            if(parentCell){ parentCell.classList.remove('tt-topic-reveal-ready'); }
         }
     }
 
@@ -5290,11 +5343,14 @@ function ensureBoardTextVisibleDuringGameplay(){
             var _old = gameplay.style.webkitTransform;
             gameplay.style.webkitTransform = 'translateZ(0)';
             requestAnimationFrame(function(){ gameplay.style.webkitTransform = _old || ''; });
+            gameplay.classList.add('tt-topics-pending');
         }
         topicRevealEnabled = true;
         var topics = document.querySelectorAll('.grid-row-cats .cat-cell.tt-topic-hidden');
         for(var i = 0; i < topics.length; i++){
             topics[i].classList.add('tt-topic-reveal-ready');
+            var parentCell = topics[i].closest('.grid-cell');
+            if(parentCell){ parentCell.classList.add('tt-topic-reveal-ready'); }
         }
         /* Clean up per-cell reveal markers and any stuck flash classes — if the
            cleanup timers were throttled or cancelled these may still be set. */
@@ -5312,7 +5368,16 @@ function ensureBoardTextVisibleDuringGameplay(){
         if(!catCell || !catCell.classList.contains('tt-topic-hidden')){ return; }
         catCell.classList.remove('tt-topic-hidden', 'tt-topic-reveal-ready');
         catCell.classList.add('tt-topic-revealed');
+        var parentCell = catCell.closest('.grid-cell');
+        if(parentCell){ parentCell.classList.remove('tt-topic-reveal-ready'); }
         playCorrectSound();
+        /* Unlock questions once every topic has been clicked */
+        var remaining = document.querySelectorAll('.grid-row-cats .cat-cell.tt-topic-hidden');
+        if(remaining.length === 0){
+            var gameplay = document.getElementById('gameplay');
+            if(gameplay){ gameplay.classList.remove('tt-topics-pending'); }
+            topicRevealEnabled = false;
+        }
     }
 
     function bindTopicRevealEvents(){
