@@ -1626,17 +1626,17 @@ kbd {
 @keyframes ttFinalStandingsFadeIn {
   0% {
     opacity: 0;
-    transform: translateX(-50%) translateY(12px);
-    filter: blur(3px);
+    transform: translateX(-50%) translateY(8px) scale(.985);
+    filter: blur(1.6px);
   }
-  55% {
-    opacity: .82;
-    transform: translateX(-50%) translateY(3px);
-    filter: blur(1.2px);
+  60% {
+    opacity: .9;
+    transform: translateX(-50%) translateY(1px) scale(.997);
+    filter: blur(.6px);
   }
   100% {
     opacity: 1;
-    transform: translateX(-50%) translateY(0);
+    transform: translateX(-50%) translateY(0) scale(1);
     filter: blur(0);
   }
 }
@@ -2103,12 +2103,12 @@ body.tt-drawing-active #tt-meter-stage * { pointer-events: auto; }
   transition: opacity 3.2s ease, transform 3.2s ease, filter 3.2s ease;
 }
 #intro-overlay.intro-exiting .intro-palm {
-  opacity: 0;
+  opacity: .78;
   animation: none;
-  transition: transform 4.2s cubic-bezier(.2,.78,.2,1), opacity 4.2s ease;
+  transition: transform 4.2s cubic-bezier(.2,.78,.2,1);
 }
-#intro-overlay.intro-exiting .intro-palm.left  { transform: translateX(-18vw); }
-#intro-overlay.intro-exiting .intro-palm.right { transform: translateX(18vw); }
+#intro-overlay.intro-exiting .intro-palm.left  { transform: translateX(calc(-100% - 10vw)); }
+#intro-overlay.intro-exiting .intro-palm.right { transform: translateX(calc(100% + 10vw)); }
 
 .intro-stage {
   position: absolute; inset: 0; z-index: 3;
@@ -2335,12 +2335,12 @@ body.tt-drawing-active #tt-meter-stage * { pointer-events: auto; }
 }
 /* Ensure exit choreography overrides logo-visible idle state */
 #intro-overlay.logo-visible.intro-exiting .intro-palm {
-  opacity: 0;
+  opacity: .78;
   animation: none !important;
-  transition: transform 4.2s cubic-bezier(.2,.78,.2,1), opacity 4.2s ease;
+  transition: transform 4.2s cubic-bezier(.2,.78,.2,1);
 }
-#intro-overlay.logo-visible.intro-exiting .intro-palm.left  { transform: translateX(-18vw); }
-#intro-overlay.logo-visible.intro-exiting .intro-palm.right { transform: translateX(18vw); }
+#intro-overlay.logo-visible.intro-exiting .intro-palm.left  { transform: translateX(calc(-100% - 10vw)); }
+#intro-overlay.logo-visible.intro-exiting .intro-palm.right { transform: translateX(calc(100% + 10vw)); }
 @keyframes palmSwayLeft {
   0%, 100% { transform: translateX(0) rotate(0deg) scale(1); }
   30% { transform: translateX(0) rotate(-1deg) scale(1.01); }
@@ -5527,6 +5527,29 @@ function ensureBoardTextVisibleDuringGameplay(){
         var overlayFadeMs     =  300;
         introExitInProgress = true;
         clearIntroExitTimers();
+        var palmLeft = intro.querySelector('.intro-palm.left');
+        var palmRight = intro.querySelector('.intro-palm.right');
+        function animatePalmsOffscreen(){
+            var palms = [palmLeft, palmRight].filter(Boolean);
+            if(!palms.length){ return; }
+            palms.forEach(function(palm){
+                var cs = window.getComputedStyle(palm);
+                palm.style.transition = 'none';
+                palm.style.animation = 'none';
+                palm.style.opacity = cs.opacity || '0.78';
+                palm.style.transform = cs.transform && cs.transform !== 'none' ? cs.transform : (palm.classList.contains('left') ? 'translateX(0)' : 'translateX(0)');
+            });
+            requestAnimationFrame(function(){
+                requestAnimationFrame(function(){
+                    palms.forEach(function(palm){
+                        palm.style.transition = 'transform 4.2s cubic-bezier(.2,.78,.2,1)';
+                        palm.style.transform = palm.classList.contains('left')
+                            ? 'translateX(calc(-100% - 10vw))'
+                            : 'translateX(calc(100% + 10vw))';
+                    });
+                });
+            });
+        }
         setIntroSoundPanelOpen(false);
         setIntroPlayerPanelOpen(false);
         closeGlobalSoundPanel();
@@ -5538,6 +5561,7 @@ function ensureBoardTextVisibleDuringGameplay(){
         if(_gp){ _gp.classList.add('tt-blur-dissolve', 'tt-bg-letter-pause'); }
         introExitTimers.push(setTimeout(stopBackgroundLetterPulse, 2000));
         playCorrectSound();
+        animatePalmsOffscreen();
         intro.classList.add('intro-exiting'); /* CSS fades overlay after 1.5 s hold */
         fadeOutIntroMusic(musicFadeMs);
         /* Render the board early so it's fully ready when the overlay finishes
@@ -5591,6 +5615,13 @@ function ensureBoardTextVisibleDuringGameplay(){
         introExitInProgress = false;
         if(intro){
             intro.classList.remove('sequence-started', 'card-visible', 'logo-visible', 'start-ready', 'intro-exiting');
+            var palms = intro.querySelectorAll('.intro-palm');
+            for(var i = 0; i < palms.length; i++){
+                palms[i].style.removeProperty('transition');
+                palms[i].style.removeProperty('animation');
+                palms[i].style.removeProperty('transform');
+                palms[i].style.removeProperty('opacity');
+            }
         }
         stopBackgroundLetterPulse();
         stopIntroMusic();
@@ -6658,10 +6689,62 @@ function ensureBoardTextVisibleDuringGameplay(){
             var anchor = first || stage;
             if(!anchor){ return; }
             var logoRect = logo.getBoundingClientRect();
-            var podiumRect = anchor.getBoundingClientRect();
-            if(!logoRect || !podiumRect || !isFinite(logoRect.bottom) || !isFinite(podiumRect.top)){ return; }
-            var targetTop = Math.round((logoRect.bottom + podiumRect.top) / 2);
+            if(!logoRect || !isFinite(logoRect.bottom)){ return; }
+
+            /* Use the podium's final resting geometry (ignoring slot translateY)
+               so the subtitle starts in the right place and never "blips" down. */
+            var stageBottom = parseFloat(window.getComputedStyle(stage).bottom || '0') || 0;
+            var anchorHeight = anchor.offsetHeight || anchor.getBoundingClientRect().height || 0;
+            var finalPodiumTop = window.innerHeight - stageBottom - anchorHeight;
+            if(!isFinite(finalPodiumTop) || !anchorHeight){
+                var podiumRect = anchor.getBoundingClientRect();
+                if(!podiumRect || !isFinite(podiumRect.top)){ return; }
+                finalPodiumTop = podiumRect.top;
+            }
+
+            var targetTop = Math.round((logoRect.bottom + finalPodiumTop) / 2);
             subtitle.style.top = targetTop + 'px';
+        }
+        function revealFinaleSubtitleCinematic(){
+            if(!subtitle){ return; }
+            var fromTf = 'translateX(-50%) translateY(8px) scale(.985)';
+            var midTf  = 'translateX(-50%) translateY(1px) scale(.997)';
+            var toTf   = 'translateX(-50%) translateY(0) scale(1)';
+            if(subtitle.__ttFsAnim){
+                try { subtitle.__ttFsAnim.cancel(); } catch (e) {}
+                subtitle.__ttFsAnim = null;
+            }
+            subtitle.classList.remove('tt-fs-in');
+            subtitle.style.opacity = '0';
+            subtitle.style.transform = fromTf;
+            subtitle.style.filter = 'blur(1.6px)';
+
+            if(typeof subtitle.animate === 'function'){
+                subtitle.__ttFsAnim = subtitle.animate([
+                    { opacity: 0,  transform: fromTf, filter: 'blur(1.6px)' },
+                    { opacity: .9, transform: midTf,  filter: 'blur(.6px)', offset: 0.6 },
+                    { opacity: 1,  transform: toTf,   filter: 'blur(0)' }
+                ], {
+                    duration: 1700,
+                    easing: 'cubic-bezier(.16,.84,.24,1)',
+                    fill: 'forwards'
+                });
+                subtitle.__ttFsAnim.onfinish = function(){
+                    subtitle.style.opacity = '1';
+                    subtitle.style.transform = toTf;
+                    subtitle.style.filter = 'blur(0)';
+                };
+                return;
+            }
+
+            subtitle.style.transition = 'opacity 1.7s cubic-bezier(.16,.84,.24,1), transform 1.7s cubic-bezier(.16,.84,.24,1), filter 1.7s cubic-bezier(.16,.84,.24,1)';
+            requestAnimationFrame(function(){
+                requestAnimationFrame(function(){
+                    subtitle.style.opacity = '1';
+                    subtitle.style.transform = toTf;
+                    subtitle.style.filter = 'blur(0)';
+                });
+            });
         }
 
         var scene = document.createElement('div');
@@ -6750,15 +6833,8 @@ function ensureBoardTextVisibleDuringGameplay(){
             logo.classList.add('tt-fl-in');
         }, 4200));
         finaleTimers.push(setTimeout(function(){
-            /* Force a fresh animation start so the fade never gets skipped by batching */
-            subtitle.classList.remove('tt-fs-in');
-            subtitle.style.animation = 'none';
-            void subtitle.offsetWidth;
-            subtitle.style.animation = '';
-            requestAnimationFrame(function(){
-                subtitle.classList.add('tt-fs-in');
-            });
             centerFinaleSubtitleBetweenLogoAndPodium();
+            revealFinaleSubtitleCinematic();
         }, 4520));
 
         /* ── Step 5: podium rises ─────────────────────────────────────── */
@@ -6776,7 +6852,6 @@ function ensureBoardTextVisibleDuringGameplay(){
            frosted overlay. ── */
         finaleTimers.push(setTimeout(function(){
             runBehindBlurBoardFlash();
-            centerFinaleSubtitleBetweenLogoAndPodium();
         }, 7700));
 
         /* ── Step 5c: reveal screenshot button after everything settles ── */
