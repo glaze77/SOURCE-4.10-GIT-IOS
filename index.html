@@ -7652,6 +7652,202 @@ window.transferTriviaDeck = {};
     });
   }
 
+  function ttUniqueFiles(files) {
+    var seen = {};
+    var out = [];
+    (files || []).forEach(function(file) {
+      var key = String(file || "").trim();
+      if (!key || seen[key]) return;
+      seen[key] = true;
+      out.push(key);
+    });
+    return out;
+  }
+
+  function ttFileBaseName(file) {
+    return String(file || "").split("/").pop();
+  }
+
+  function ttFileSortRank(file) {
+    var m = ttFileBaseName(file).toLowerCase().match(/^image(\d+)([a-z]?)(?:\.[a-z0-9]+)$/);
+    if (!m) return { n: 9999, s: "zz", raw: String(file || "").toLowerCase() };
+    return { n: parseInt(m[1], 10) || 9999, s: m[2] || "", raw: String(file || "").toLowerCase() };
+  }
+
+  function ttSortMediaFiles(files) {
+    return (files || []).slice().sort(function(a, b) {
+      var ra = ttFileSortRank(a);
+      var rb = ttFileSortRank(b);
+      if (ra.n !== rb.n) return ra.n - rb.n;
+      if (ra.s !== rb.s) return ra.s < rb.s ? -1 : 1;
+      return ra.raw < rb.raw ? -1 : 1;
+    });
+  }
+
+  function ttBuildProbeFiles() {
+    var exts = ["png", "jpg", "jpeg", "webp"];
+    var out = [];
+    for (var n = 1; n <= 12; n += 1) {
+      exts.forEach(function(ext) {
+        out.push("image" + n + "." + ext);
+      });
+    }
+    "abcdefgh".split("").forEach(function(ch) {
+      exts.forEach(function(ext) {
+        out.push("image1" + ch + "." + ext);
+      });
+    });
+    return out;
+  }
+
+  var ttProbeFiles = ttBuildProbeFiles();
+  var ttMediaDiscoveryPromises = {};
+  var ttMediaDiscoveryResults = {};
+
+  function ttAnswerMediaEnabled(meta) {
+    meta = meta || {};
+    return !(
+      meta.showAnswerMedia === false ||
+      meta.answerMedia === false ||
+      meta.mediaInAnswer === false
+    );
+  }
+
+  function ttQuestionMediaEnabled(meta) {
+    meta = meta || {};
+    return !!(
+      meta.showQuestionMedia ||
+      meta.questionMedia === true ||
+      meta.mediaInQuestion === true ||
+      (Array.isArray(meta.questionMedia) && meta.questionMedia.length)
+    );
+  }
+
+  function ttFileExists(url) {
+    if (!url) return Promise.resolve(false);
+    return fetch(url, { method: "HEAD", cache: "no-store" }).then(function(resp) {
+      if (resp && resp.ok) return true;
+      return false;
+    }).catch(function() {
+      return new Promise(function(resolve) {
+        var done = false;
+        var img = new Image();
+        var timer = setTimeout(function() {
+          if (done) return;
+          done = true;
+          resolve(false);
+        }, 4000);
+        img.onload = function() {
+          if (done) return;
+          done = true;
+          clearTimeout(timer);
+          resolve(true);
+        };
+        img.onerror = function() {
+          if (done) return;
+          done = true;
+          clearTimeout(timer);
+          resolve(false);
+        };
+        img.src = url + (url.indexOf("?") === -1 ? "?" : "&") + "tt_probe=1";
+      });
+    });
+  }
+
+  function ttMediaFromMeta(entry, kind) {
+    var meta = (entry && entry.meta) || {};
+    var media = [];
+    if (kind === "answer") {
+      media = Array.isArray(meta.answerMedia) ? meta.answerMedia : (Array.isArray(meta.media) ? meta.media : []);
+    } else if (kind === "question") {
+      media = Array.isArray(meta.questionMedia) ? meta.questionMedia : (Array.isArray(meta.media) ? meta.media : []);
+    } else {
+      media = Array.isArray(meta.media) ? meta.media : [];
+    }
+    return media.map(function(item) {
+      return item && item.file ? String(item.file) : "";
+    }).filter(Boolean);
+  }
+
+  function ttBuildMediaObjects(cellId, files) {
+    return (files || []).map(function(file) {
+      return { file: file, src: "./content/" + cellId + "/" + file };
+    });
+  }
+
+  function ttExpandDeclaredMediaPaths(files, defaultFolder) {
+    var out = [];
+    (files || []).forEach(function(file) {
+      var next = String(file || "").trim();
+      if (!next) return;
+      if (next.indexOf("/") !== -1) {
+        out.push(next);
+      } else {
+        out.push(defaultFolder + "/" + next);
+        out.push(next);
+      }
+    });
+    return ttUniqueFiles(out);
+  }
+
+  function ttDiscoverMediaList(cellId, declaredFiles, defaultFolder) {
+    var declaredExpanded = ttExpandDeclaredMediaPaths(declaredFiles, defaultFolder);
+    var probePrefixed = ttProbeFiles.map(function(name) { return defaultFolder + "/" + name; });
+    var probeLegacy = ttProbeFiles.slice();
+    var candidates = ttUniqueFiles(declaredExpanded.concat(probePrefixed, probeLegacy));
+    return Promise.all(candidates.map(function(file) {
+      var src = "./content/" + cellId + "/" + file;
+      return ttFileExists(src).then(function(ok) {
+        return ok ? file : null;
+      });
+    })).then(function(found) {
+      var files = ttSortMediaFiles(found.filter(Boolean));
+      if (!files.length && declaredExpanded.length) {
+        files = ttSortMediaFiles(declaredExpanded);
+      }
+      return files;
+    });
+  }
+
+  function ttDiscoverMediaForCell(cellId, entry) {
+    if (!cellId || !entry) return Promise.resolve(entry);
+    var baseMeta = (entry && entry.meta) || {};
+    var declaredAnswerFiles = ttMediaFromMeta(entry, "answer");
+    var declaredQuestionFiles = ttMediaFromMeta(entry, "question");
+    var cacheKey = cellId + "::a:" + ttUniqueFiles(declaredAnswerFiles).join("|") + "::q:" + ttUniqueFiles(declaredQuestionFiles).join("|");
+    if (ttMediaDiscoveryResults[cacheKey]) {
+      return Promise.resolve(ttMediaDiscoveryResults[cacheKey]);
+    }
+    if (ttMediaDiscoveryPromises[cacheKey]) {
+      return ttMediaDiscoveryPromises[cacheKey];
+    }
+    ttMediaDiscoveryPromises[cacheKey] = Promise.all([
+      ttDiscoverMediaList(cellId, declaredAnswerFiles, "answer-images"),
+      ttDiscoverMediaList(cellId, declaredQuestionFiles, "question-images")
+    ]).then(function(results) {
+      var answerFiles = Array.isArray(results[0]) ? results[0] : [];
+      var questionFiles = Array.isArray(results[1]) ? results[1] : [];
+      var legacyMedia = ttAnswerMediaEnabled(baseMeta) ? answerFiles : questionFiles;
+      var nextMeta = Object.assign({}, baseMeta, {
+        answerMedia: ttBuildMediaObjects(cellId, answerFiles),
+        questionMedia: ttBuildMediaObjects(cellId, questionFiles),
+        media: ttBuildMediaObjects(cellId, legacyMedia)
+      });
+      var nextEntry = Object.assign({}, entry, { meta: nextMeta });
+      ttMediaDiscoveryResults[cacheKey] = nextEntry;
+      return nextEntry;
+    }).catch(function() {
+      return entry;
+    }).then(function(result) {
+      delete ttMediaDiscoveryPromises[cacheKey];
+      return result;
+    }, function(err) {
+      delete ttMediaDiscoveryPromises[cacheKey];
+      throw err;
+    });
+    return ttMediaDiscoveryPromises[cacheKey];
+  }
+
   function syncLightboxSelection(lb) {
     if (!lb) return;
     var stepper = lb._ttStepper;
@@ -7768,13 +7964,9 @@ window.transferTriviaDeck = {};
 
   function mediaHtml(entry) {
     var meta = (entry && entry.meta) || {};
-    var showAnswerMedia = !(
-      meta.showAnswerMedia === false ||
-      meta.answerMedia === false ||
-      meta.mediaInAnswer === false
-    );
+    var showAnswerMedia = ttAnswerMediaEnabled(meta);
     if (!showAnswerMedia) return "";
-    var media = Array.isArray(meta.media) ? meta.media : [];
+    var media = Array.isArray(meta.answerMedia) ? meta.answerMedia : (Array.isArray(meta.media) ? meta.media : []);
     if (!media.length) return "";
     var cls = "tt-answer-media single";
     if (meta.mediaClass) cls += " " + meta.mediaClass;
@@ -7797,9 +7989,9 @@ window.transferTriviaDeck = {};
 
   function questionMediaHtml(entry) {
     var meta = (entry && entry.meta) || {};
-    var showQuestionMedia = !!(meta.showQuestionMedia || meta.questionMedia || meta.mediaInQuestion);
+    var showQuestionMedia = ttQuestionMediaEnabled(meta);
     if (!showQuestionMedia) return "";
-    var media = Array.isArray(meta.media) ? meta.media : [];
+    var media = Array.isArray(meta.questionMedia) ? meta.questionMedia : (Array.isArray(meta.media) ? meta.media : []);
     if (!media.length) return "";
     var item = media[0];
     if (media.length > 1) {
@@ -8848,43 +9040,67 @@ window.transferTriviaDeck = {};
     div_modal.classList.remove("answer-collapsed");
 
     var inner = document.querySelectorAll("#question-modal .modal-inner")[0];
-    inner.innerHTML = entryHtml(entry);
-    initMediaSteppers(inner);
-    var questionInnerEl = inner.querySelector(".tt-question-text-inner");
-    if (questionInnerEl) {
-      questionInnerEl.removeAttribute("data-tt-fitted");
-      questionInnerEl.style.visibility = "hidden";
+    function bindModalMediaUi() {
+      inner.querySelectorAll(".tt-media-card img, .tt-question-media-card img").forEach(function(img) {
+        img.addEventListener("click", function(e) {
+          var stepper = this.closest(".tt-media-stepper");
+          if (stepper) {
+            var count = parseInt(stepper.getAttribute("data-media-count") || "0", 10);
+            var srcs = [];
+            for (var i = 0; i < count; i += 1) {
+              var src = stepper.getAttribute("data-media-src-" + i);
+              if (src) srcs.push(src);
+            }
+            if (srcs.length > 1) {
+              var current = parseInt(stepper.getAttribute("data-media-index") || "0", 10);
+              openLightbox(srcs, current, stepper);
+              return;
+            }
+          }
+          openLightbox(this.getAttribute("src"));
+        });
+      });
+      var collapseBtn = inner.querySelector("#tt-answer-collapse-btn");
+      if (collapseBtn) {
+        collapseBtn.addEventListener("click", function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (typeof window.toggleAnswerCollapsed === "function") {
+            window.toggleAnswerCollapsed();
+          }
+        });
+      }
     }
+    function renderModalEntry(entryToRender) {
+      inner.innerHTML = entryHtml(entryToRender);
+      initMediaSteppers(inner);
+      bindModalMediaUi();
+      var questionInnerEl = inner.querySelector(".tt-question-text-inner");
+      if (questionInnerEl) {
+        questionInnerEl.removeAttribute("data-tt-fitted");
+        questionInnerEl.style.visibility = "hidden";
+      }
+    }
+    renderModalEntry(entry);
 
-    inner.querySelectorAll(".tt-media-card img, .tt-question-media-card img").forEach(function(img) {
-      img.addEventListener("click", function(e) {
-        var stepper = this.closest(".tt-media-stepper");
-        if (stepper) {
-          var count = parseInt(stepper.getAttribute("data-media-count") || "0", 10);
-          var srcs = [];
-          for (var i = 0; i < count; i += 1) {
-            var src = stepper.getAttribute("data-media-src-" + i);
-            if (src) srcs.push(src);
-          }
-          if (srcs.length > 1) {
-            var current = parseInt(stepper.getAttribute("data-media-index") || "0", 10);
-            openLightbox(srcs, current, stepper);
-            return;
-          }
-        }
-        openLightbox(this.getAttribute("src"));
+    ttDiscoverMediaForCell(cellId, entry).then(function(nextEntry) {
+      if (!nextEntry || ttCurrentClueId !== cellId) return;
+      var oldFiles = "a:" + ttMediaFromMeta(entry, "answer").join("|") + "::q:" + ttMediaFromMeta(entry, "question").join("|");
+      var nextFiles = "a:" + ttMediaFromMeta(nextEntry, "answer").join("|") + "::q:" + ttMediaFromMeta(nextEntry, "question").join("|");
+      if (nextFiles === oldFiles) return;
+      var isAnswerVisible = div_modal.classList.contains("answer-visible");
+      var isAnswerCollapsed = div_modal.classList.contains("answer-collapsed");
+      entry = nextEntry;
+      deck[cellId] = nextEntry;
+      renderModalEntry(nextEntry);
+      if (isAnswerVisible) div_modal.classList.add("answer-visible");
+      if (isAnswerCollapsed) div_modal.classList.add("answer-collapsed");
+      requestAnimationFrame(function() {
+        syncQuestionModalViewportHeight();
+        fitQuestionTextInModal();
+        fitAnswerTextInModal();
       });
     });
-    var collapseBtn = inner.querySelector("#tt-answer-collapse-btn");
-    if (collapseBtn) {
-      collapseBtn.addEventListener("click", function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        if (typeof window.toggleAnswerCollapsed === "function") {
-          window.toggleAnswerCollapsed();
-        }
-      });
-    }
 
     if (!no_push_state) {
       try {
@@ -9871,14 +10087,58 @@ window.transferTriviaDeck = {};
 
   function normalizeMeta(cellId, meta){
     var nextMeta = meta ? Object.assign({}, meta) : {};
-    if(Array.isArray(nextMeta.media)){
-      nextMeta.media = nextMeta.media.map(function(item){
+    function mapMedia(list, defaultFolder){
+      var items = Array.isArray(list) ? list : [];
+      return items.map(function(item){
         var next = Object.assign({}, item);
-        if(next.file && !next.src){
-          next.src = './content/' + cellId + '/' + next.file;
+        var file = String(next.file || "").trim();
+        if(file){
+          if(file.indexOf("/") === -1){
+            file = defaultFolder + "/" + file;
+          }
+          next.file = file;
+          if(!next.src){
+            next.src = './content/' + cellId + '/' + file;
+          }
         }
         return next;
       });
+    }
+    var showQuestionMedia = !!(
+      nextMeta.showQuestionMedia ||
+      nextMeta.questionMedia === true ||
+      nextMeta.mediaInQuestion === true ||
+      (Array.isArray(nextMeta.questionMedia) && nextMeta.questionMedia.length)
+    );
+    var showAnswerMedia = !(
+      nextMeta.showAnswerMedia === false ||
+      nextMeta.answerMedia === false ||
+      nextMeta.mediaInAnswer === false
+    );
+    if(!Array.isArray(nextMeta.answerMedia) && !Array.isArray(nextMeta.questionMedia) && Array.isArray(nextMeta.media)){
+      if(showQuestionMedia && !showAnswerMedia){
+        nextMeta.questionMedia = nextMeta.media.slice();
+      } else if(showAnswerMedia && !showQuestionMedia){
+        nextMeta.answerMedia = nextMeta.media.slice();
+      } else {
+        nextMeta.answerMedia = nextMeta.media.slice();
+        if(showQuestionMedia){
+          nextMeta.questionMedia = nextMeta.media.slice();
+        }
+      }
+    }
+    if(Array.isArray(nextMeta.answerMedia)){
+      nextMeta.answerMedia = mapMedia(nextMeta.answerMedia, 'answer-images');
+    }
+    if(Array.isArray(nextMeta.questionMedia)){
+      nextMeta.questionMedia = mapMedia(nextMeta.questionMedia, 'question-images');
+    }
+    if(showAnswerMedia && Array.isArray(nextMeta.answerMedia)){
+      nextMeta.media = nextMeta.answerMedia.slice();
+    } else if(showQuestionMedia && Array.isArray(nextMeta.questionMedia)){
+      nextMeta.media = nextMeta.questionMedia.slice();
+    } else if(Array.isArray(nextMeta.media)){
+      nextMeta.media = mapMedia(nextMeta.media, 'answer-images');
     }
     return nextMeta;
   }
