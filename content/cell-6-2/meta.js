@@ -1,1 +1,1 @@
-window.transferTriviaRegisterMeta("cell-6-2", {"clueId":"cell-6-2","slide":32,"category":"ASCO Switches","points":"600","badges":["two-part"],"mediaClass":"","media":[{"file":"image1.png","w":3524742,"h":3362794},{"file":"image2.png","w":2425700,"h":1914380}]});
+window.transferTriviaRegisterMeta("cell-6-2", {"clueId":"cell-6-2","slide":32,"category":"ASCO Switches","points":"600","badges":["two-part"],"mediaClass":"tt-answer-media-1up","media":[{"file":"image1.png","w":3524742,"h":3362794}]});

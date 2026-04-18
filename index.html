@@ -103,6 +103,18 @@ kbd {
   padding: .1em .6em;
   text-shadow: 0 1px 0 #fff;
 }
+kbd.tt-hotkey {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 1.5em; height: 1.5em;
+  padding: 0 .25em; margin: 0 .22em 0 0;
+  background: rgba(255,255,255,0.18);
+  border: 1.5px solid rgba(255,255,255,0.55);
+  border-bottom-width: 3px;
+  border-radius: 5px;
+  box-shadow: none; text-shadow: none;
+  color: inherit; font-family: inherit; font-size: 1em; font-weight: 900;
+  line-height: 1; vertical-align: middle; letter-spacing: 0;
+}
 
 /* ═══════════════════════════════════════════════════════════════
    3. LAYOUT SHELL  — gameplay, teams bar, options modal
@@ -759,10 +771,10 @@ kbd {
 .tt-question-text {
   position: absolute; inset: 0; display: grid; place-items: center;
   box-sizing: border-box;
-  padding: calc(var(--tt-badge-strip) + clamp(10px,2vh,24px)) clamp(28px,3.8vw,56px) clamp(18px,3vh,34px);
+  padding: calc(var(--tt-badge-strip) + clamp(10px,2vh,24px)) clamp(28px,3.8vw,56px) 0;
   overflow: hidden; opacity: 1; transition: opacity .12s ease;
 }
-.tt-question-text.has-media { place-items: end center; padding-top: calc(var(--tt-badge-strip) + clamp(6px,1.2vh,14px)); padding-bottom: clamp(4px,0.8vh,10px); }
+.tt-question-text.has-media { place-items: end center; padding-top: calc(var(--tt-badge-strip) + clamp(6px,1.2vh,14px)); padding-bottom: 0; }
 #question-modal.tt-question-pending .tt-question-text { opacity: 0; }
 .tt-question-text-inner {
   width: min(82vw, 1220px); max-width: 100%; max-height: 100%;
@@ -776,6 +788,29 @@ kbd {
   width: min(100vw, calc(100vw - 146px));
 }
 .tt-question-copy { text-wrap: balance; }
+.tt-question-copy br { display: block; content: ""; margin: 0; line-height: 0.6em; }
+.tt-question-list {
+  display: inline-grid;
+  grid-template-columns: max-content max-content;
+  gap: 0.25em 1.2em;
+  text-align: left;
+  margin: 0.4em auto;
+  padding: 0.5em 1.2em;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+}
+.tt-ql-label {
+  grid-column: 1; white-space: nowrap;
+  font-weight: 700; opacity: 0.9;
+}
+.tt-ql-label::before { content: "\2022\00a0\00a0"; opacity: 0.5; }
+.tt-ql-value {
+  grid-column: 2; white-space: nowrap;
+  font-weight: 800; color: #ffe270;
+  text-align: right;
+}
+.tt-ql-text { display: block; }
 .tt-question-media { width: 100%; margin: 0 auto; }
 .tt-question-media-card {
   border-radius: 14px; border: 1px solid rgba(255,255,255,0.18);
@@ -845,6 +880,9 @@ kbd {
 }
 .tt-answer-media.single { grid-template-columns: 1fr; }
 .tt-answer-content.has-media .tt-answer-media { grid-template-columns: 1fr; height: 100%; }
+.tt-answer-content.has-media .tt-answer-media.tt-answer-media-1up { grid-template-columns: 1fr; grid-auto-rows: 1fr; height: 100%; }
+.tt-answer-content.has-media .tt-answer-media.tt-answer-media-1up .tt-media-card { height: 100%; min-height: 0; width: 100%; }
+.tt-answer-content.has-media .tt-answer-media.tt-answer-media-1up .tt-media-card img { width: 100%; height: 100%; object-fit: contain; }
 .tt-answer-content.has-media .tt-answer-media.tt-answer-media-2x2 { grid-template-columns: 1fr 1fr; grid-auto-rows: 1fr; height: 100%; }
 .tt-answer-content.has-media .tt-answer-media.tt-answer-media-2x2 .tt-media-card { height: 100%; min-height: 0; }
 .tt-answer-content.has-media .tt-answer-media.tt-answer-media-3up { grid-template-columns: 1fr 1fr 1fr; grid-auto-rows: 1fr; height: 100%; }
@@ -1912,7 +1950,8 @@ kbd {
 .draw-tool-icon.pen-green  { color: #37d66b; }
 .draw-tool-icon.pointer    { color: #ffffff; }
 .draw-tool-icon.eraser     { color: #ffffff; }
-.draw-tool-icon.meter      { color: #ffd548; }
+.draw-tool-icon.meter        { color: #ffd548; }
+.draw-tool-icon.highlighter  { color: #ffe033; }
 
 /* Hint hub (below draw tools) */
 #tt-hint-hub {
@@ -2862,9 +2901,9 @@ body.tt-drawing-active #tt-meter-stage * { pointer-events: auto; }
 
 <div aria-label="Prompt" aria-modal="true" class="modal-wrapper" id="question-modal" role="dialog">
 <div id="modal-header">
-<div class="tt-modal-left-slot"><div aria-label="Return to game board" id="continue-button" role="button" tabindex="0"><div><span><u>G</u>ame Board</span></div></div></div>
+<div class="tt-modal-left-slot"><div aria-label="Return to game board" id="continue-button" role="button" tabindex="0"><div><span><kbd class="tt-hotkey">G</kbd>ame Board</span></div></div></div>
 <div id="question-title"></div>
-<div class="tt-modal-right-slot"><div aria-label="Mark incorrect response" id="wrong-answer-button" role="button" tabindex="0"><div><span><u>D</u>enied</span></div></div><div aria-label="Reveal correct response" id="answer-button" role="button" tabindex="0"><div><span><u>A</u>pproved</span></div></div></div>
+<div class="tt-modal-right-slot"><div aria-label="Mark incorrect response" id="wrong-answer-button" role="button" tabindex="0"><div><span><kbd class="tt-hotkey">D</kbd>enied</span></div></div><div aria-label="Reveal correct response" id="answer-button" role="button" tabindex="0"><div><span><kbd class="tt-hotkey">A</kbd>pproved</span></div></div></div>
 </div>
 <div class="modal-body">
 <div class="modal-inner"></div>
@@ -4214,6 +4253,7 @@ if (CLEAN_MODE) {
     var AUDIO_PATHS = {
         introTheme: "media/Audio/intro/00934478.mp3",
         boardReveal: "media/Audio/board/jeopardy-board-sms.mp3",
+        addPoints: "media/Audio/add points/coin.mp3",
         clues: {
             correct: "media/Audio/clues/rightanswer.mp3",
             wrong: "media/Audio/clues/wrong-buzzer.mp3",
@@ -6945,61 +6985,50 @@ function ensureBoardTextVisibleDuringGameplay(){
         } catch (e) {}
     }
 
-    /* Synthesize score-feedback sounds via Web Audio API.
-       Positive : Mario-style coin ching — B5 (988 Hz) blip then E6 (1319 Hz) ring.
-       Negative : three-note descending "wah-wah-wah" — Bb4 → G4 → Eb4, square wave. */
+    var ttCoinAudio = null;
+    /* Positive: play coin.mp3. Negative: synthesized wah-wah-wah via Web Audio API. */
     function playScorePopSound(isPositive){
         if(!soundEnabled){ return; }
+        if(isPositive){
+            try {
+                if(!ttCoinAudio){
+                    ttCoinAudio = new Audio(AUDIO_PATHS.addPoints);
+                    ttCoinAudio.preload = 'auto';
+                    ttCoinAudio.load();
+                }
+                ttCoinAudio.pause();
+                ttCoinAudio.currentTime = 0;
+                ttCoinAudio.volume = getAudioVolumeForKind('correct') * 0.4;
+                ttCoinAudio.play().catch(function(){});
+            } catch(e){}
+            return;
+        }
         try {
             if(!audioContext){
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
             }
             var ctx = audioContext;
             var now = ctx.currentTime;
-
-            if(isPositive){
-                /* ── Coin ching: B5 blip (0–22 ms) → E6 ring (22–210 ms) ── */
-                /* Square wave + sine overtone layered for authentic retro timbre */
-                var notes = [
-                    { freq: 987.8,  start: 0,     end: 0.022, vol: 0.13, type: 'square' },
-                    { freq: 1318.5, start: 0.022,  end: 0.21,  vol: 0.13, type: 'square' },
-                    { freq: 2637,   start: 0.022,  end: 0.14,  vol: 0.045, type: 'sine'  }
-                ];
-                notes.forEach(function(n){
-                    var osc  = ctx.createOscillator();
-                    var gain = ctx.createGain();
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    osc.type = n.type;
-                    osc.frequency.setValueAtTime(n.freq, now + n.start);
-                    gain.gain.setValueAtTime(n.vol, now + n.start);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + n.end);
-                    osc.start(now + n.start);
-                    osc.stop(now + n.end + 0.01);
-                });
-
-            } else {
-                /* ── Wah-wah-wah: Bb4 → G4 → Eb4 descending, overlapping ── */
-                /* Each note fades in slightly then decays — "losing" horn feel */
-                var wah = [
-                    { freq: 466.2, start: 0,     end: 0.13  },
-                    { freq: 392.0, start: 0.09,  end: 0.22  },
-                    { freq: 311.1, start: 0.18,  end: 0.34  }
-                ];
-                wah.forEach(function(n){
-                    var osc  = ctx.createOscillator();
-                    var gain = ctx.createGain();
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    osc.type = 'square';
-                    osc.frequency.setValueAtTime(n.freq, now + n.start);
-                    gain.gain.setValueAtTime(0, now + n.start);
-                    gain.gain.linearRampToValueAtTime(0.10, now + n.start + 0.018);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + n.end);
-                    osc.start(now + n.start);
-                    osc.stop(now + n.end + 0.01);
-                });
-            }
+            /* ── Wah-wah-wah: Bb4 → G4 → Eb4 descending, overlapping ── */
+            /* Each note fades in slightly then decays — "losing" horn feel */
+            var wah = [
+                { freq: 466.2, start: 0,     end: 0.13  },
+                { freq: 392.0, start: 0.09,  end: 0.22  },
+                { freq: 311.1, start: 0.18,  end: 0.34  }
+            ];
+            wah.forEach(function(n){
+                var osc  = ctx.createOscillator();
+                var gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(n.freq, now + n.start);
+                gain.gain.setValueAtTime(0, now + n.start);
+                gain.gain.linearRampToValueAtTime(0.10, now + n.start + 0.018);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + n.end);
+                osc.start(now + n.start);
+                osc.stop(now + n.end + 0.01);
+            });
         } catch(e){}
     }
 
@@ -7579,6 +7608,35 @@ window.transferTriviaDeck = {};
       .replace(/'/g, "&#39;");
   }
 
+  function ttFormatQuestion(str) {
+    var lines = String(str == null ? "" : str).split('\n');
+    var html = '';
+    var bulletBuf = [];
+    function flushBullets() {
+      if (!bulletBuf.length) return;
+      html += '<div class="tt-question-list">';
+      bulletBuf.forEach(function(line) {
+        var pipeIdx = line.indexOf('|');
+        var label = pipeIdx > -1 ? line.slice(0, pipeIdx).trim() : line.trim();
+        var value = pipeIdx > -1 ? line.slice(pipeIdx + 1).trim() : '';
+        html += '<span class="tt-ql-label">' + ttEscape(label) + '</span>'
+              + '<span class="tt-ql-value">' + ttEscape(value) + '</span>';
+      });
+      html += '</div>';
+      bulletBuf = [];
+    }
+    lines.forEach(function(line) {
+      if (/^\s*\u2022/.test(line)) {
+        bulletBuf.push(line.replace(/^\s*\u2022\s*/, ''));
+      } else {
+        flushBullets();
+        html += (line.trim() === '' ? '<br>' : '<span class="tt-ql-text">' + ttEscape(line) + '</span><br>');
+      }
+    });
+    flushBullets();
+    return html;
+  }
+
   function removeSoundButtons() {
     [
       "#sound-actions",
@@ -7804,7 +7862,7 @@ window.transferTriviaDeck = {};
       '<div id="tt-question-box" class="tt-question-panel">' +
         badgeMarkup +
         '<div class="tt-question-text' + (hasQuestionMedia ? ' has-media' : '') + '"><div class="tt-question-text-inner' + (hasQuestionMedia ? ' has-media' : '') + '">' +
-          '<div class="tt-question-copy">' + ttEscape((entry && entry.question) || "") + '</div>' +
+          '<div class="tt-question-copy">' + ttFormatQuestion((entry && entry.question) || "") + '</div>' +
           questionMedia +
         '</div></div>' +
       '</div>' +
@@ -8558,6 +8616,12 @@ window.transferTriviaDeck = {};
     answerPanel.style.bottom = bottomGap + "px";
     answerPanel.style.width = "auto";
     answerPanel.style.height = answerHeight + "px";
+
+    // Vertically center question text in the visible area (above the answer panel)
+    var questionText = questionPanel.querySelector(".tt-question-text");
+    if (questionText && !isLandMob) {
+      questionText.style.paddingBottom = (answerHeight + bottomGap) + "px";
+    }
   }
 
   function refreshModalLayoutWhenReady() {
@@ -8966,6 +9030,7 @@ window.transferTriviaDeck = {};
   var PEN_BLACK_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 17.3 14.7 5.6l3.7 3.7L6.7 21H3v-3.7Zm17.7-10.6a1.2 1.2 0 0 0 0-1.7l-1.7-1.7a1.2 1.2 0 0 0-1.7 0l-1.6 1.6 3.7 3.7 1.3-1.3Z"/></svg>';
   var PEN_ORANGE_ICON = PEN_RED_ICON;
   var PEN_GREEN_ICON = PEN_RED_ICON;
+  var HIGHLIGHTER_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18.5 2.5a2.1 2.1 0 0 1 3 3L10 17l-4 1 1-4L18.5 2.5ZM3 21h18v-1.5H3V21Z"/></svg>';
   var METER_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5.2 2.5h13.6c1.1 0 2 .9 2 2v15c0 1.1-.9 2-2 2H5.2c-1.1 0-2-.9-2-2v-15c0-1.1.9-2 2-2Zm1 2.2v12.6h11.6V4.7H6.2Zm5.8 2.1a3.8 3.8 0 0 1 3.8 3.8h-1.8a2 2 0 1 0-3.1 1.7v2.2a4 4 0 1 1 1.1.1V12.2l2.7-1.6-.9-1.5-1.8 1.1V6.8Z"/></svg>';
 
   function createHub(){
@@ -8984,6 +9049,7 @@ window.transferTriviaDeck = {};
       '  <button type="button" class="draw-tool-btn" data-tool="pen-black" aria-label="Black Pen" title="Black Pen"><span class="draw-tool-icon pen-black">' + PEN_BLACK_ICON + '</span><span>Black Pen</span></button>' +
       '  <button type="button" class="draw-tool-btn" data-tool="pen-green" aria-label="Green Pen" title="Green Pen"><span class="draw-tool-icon pen-green">' + PEN_GREEN_ICON + '</span><span>Green Pen</span></button>' +
       '  <button type="button" class="draw-tool-btn" data-tool="meter" aria-label="Insert Meter" title="Insert Meter"><span class="draw-tool-icon meter">' + METER_ICON + '</span><span>Insert Meter</span></button>' +
+      '  <button type="button" class="draw-tool-btn" data-tool="highlighter" aria-label="Highlighter" title="Highlighter"><span class="draw-tool-icon highlighter">' + HIGHLIGHTER_ICON + '</span><span>Highlighter</span></button>' +
       '  <button type="button" class="draw-tool-btn" data-tool="eraser" aria-label="Eraser" title="Eraser"><span class="draw-tool-icon eraser">' + ERASER_ICON + '</span><span>Eraser</span></button>' +
       '</div>';
     document.body.appendChild(hub);
@@ -9144,7 +9210,8 @@ window.transferTriviaDeck = {};
       if (!stroke || !stroke.points || stroke.points.length < 2) return;
       ctx.save();
       ctx.globalCompositeOperation = 'source-over';
-      ctx.lineCap = 'round';
+      ctx.globalAlpha = stroke.alpha || 1;
+      ctx.lineCap = stroke.lineCap || 'round';
       ctx.lineJoin = 'round';
       ctx.lineWidth = stroke.width || 5;
       ctx.strokeStyle = stroke.color || '#ff4a4a';
@@ -9208,7 +9275,7 @@ window.transferTriviaDeck = {};
     }
 
     function syncDrawingMode(){
-      var active = state.tool === 'pen-red' || state.tool === 'pen-orange' || state.tool === 'pen-green' || state.tool === 'pen-black' || state.tool === 'eraser';
+      var active = state.tool === 'pen-red' || state.tool === 'pen-orange' || state.tool === 'pen-green' || state.tool === 'pen-black' || state.tool === 'highlighter' || state.tool === 'eraser';
       document.body.classList.toggle('tt-drawing-active', active && modalVisible());
     }
 
@@ -9226,7 +9293,7 @@ window.transferTriviaDeck = {};
       if (tool === 'cursor') {
         drawCanvas.classList.add('cursor-active');
         drawCanvas.style.pointerEvents = 'none';
-      } else if (tool === 'pen-red' || tool === 'pen-orange' || tool === 'pen-green' || tool === 'pen-black') {
+      } else if (tool === 'pen-red' || tool === 'pen-orange' || tool === 'pen-green' || tool === 'pen-black' || tool === 'highlighter') {
         drawCanvas.classList.add('draw-active');
         drawCanvas.style.pointerEvents = 'auto';
       } else if (tool === 'eraser') {
@@ -9263,9 +9330,15 @@ window.transferTriviaDeck = {};
       if (state.tool === 'eraser') {
         eraseTouchedStroke(p);
       } else {
+        var isHighlighter = state.tool === 'highlighter';
         state.currentStroke = {
-          color: currentColor(),
-          width: 5,
+          color: isHighlighter ? '#ffff00' : currentColor(),
+          width: isHighlighter ? 25 : 5,
+          alpha: isHighlighter ? 0.35 : 1,
+          lineCap: isHighlighter ? 'square' : 'round',
+          axis: isHighlighter ? null : undefined,
+          originX: isHighlighter ? p.x : undefined,
+          originY: isHighlighter ? p.y : undefined,
           points: [
             { x: p.x, y: p.y },
             { x: p.x + 0.01, y: p.y + 0.01 }
@@ -9283,7 +9356,17 @@ window.transferTriviaDeck = {};
       if (state.tool === 'eraser') {
         eraseTouchedStroke(p);
       } else if (state.currentStroke) {
-        state.currentStroke.points.push({ x: p.x, y: p.y });
+        var stroke = state.currentStroke;
+        if (stroke.axis !== undefined) {
+          var dx = Math.abs(p.x - stroke.originX);
+          var dy = Math.abs(p.y - stroke.originY);
+          if (stroke.axis === null && (dx > 6 || dy > 6)) {
+            stroke.axis = dx >= dy ? 'h' : 'v';
+          }
+          if (stroke.axis === 'h') p = { x: p.x, y: stroke.originY };
+          else if (stroke.axis === 'v') p = { x: stroke.originX, y: p.y };
+        }
+        stroke.points.push({ x: p.x, y: p.y });
         redrawInk();
       }
       state.lastX = p.x;

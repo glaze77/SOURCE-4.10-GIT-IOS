@@ -7,17 +7,12 @@
   "badges": [
     "two-part"
   ],
-  "mediaClass": "",
+  "mediaClass": "tt-answer-media-1up",
   "media": [
     {
       "file": "image1.png",
       "w": 3829584,
       "h": 3115110
-    },
-    {
-      "file": "image2.png",
-      "w": 4531983,
-      "h": 5970178
     }
   ]
 }

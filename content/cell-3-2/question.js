@@ -1,1 +1,1 @@
-window.transferTriviaRegisterQuestion('cell-3-2', "What is feature 5 on asco switches?\n");
+window.transferTriviaRegisterQuestion('cell-3-2', "What is Feature 5 on ASCO switches?");

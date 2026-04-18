@@ -1,1 +1,1 @@
-Bypass is on auto, isolation is on test, which source is feeding the load?
+The bypass is on Auto and isolation is on Test — which source is feeding the load?

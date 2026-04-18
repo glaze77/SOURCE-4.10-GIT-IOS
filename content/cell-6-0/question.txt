@@ -1,1 +1,1 @@
-During a commercial power fail, which relay energizes after the eg has started?
+During a commercial power failure, which relay energizes after the EG has started?

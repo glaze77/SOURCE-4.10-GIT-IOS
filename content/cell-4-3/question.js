@@ -1,1 +1,1 @@
-window.transferTriviaRegisterQuestion('cell-4-3', "On a kohler m340, what does the \u201cContactor position\u201d led indicate?\n");
+window.transferTriviaRegisterQuestion('cell-4-3', "On a Kohler M340, what does the \u201cContactor Position\u201d LED indicate?");

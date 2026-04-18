@@ -1,1 +1,1 @@
-What is the input and output of the ts bridge rectifier that feeds the ts-coil?
+What are the input and output values of the TS Bridge Rectifier that feeds the TS-Coil?

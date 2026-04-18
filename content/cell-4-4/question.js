@@ -1,1 +1,1 @@
-window.transferTriviaRegisterQuestion('cell-4-4', "What is the purpose of k1?\n");
+window.transferTriviaRegisterQuestion('cell-4-4', "What is the purpose of K1?");

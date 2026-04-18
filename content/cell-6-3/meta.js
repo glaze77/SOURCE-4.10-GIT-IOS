@@ -1,1 +1,1 @@
-window.transferTriviaRegisterMeta("cell-6-3", {"clueId":"cell-6-3","slide":33,"category":"Kohler M340","points":"600","badges":[],"mediaClass":"tt-answer-media-2x2","media":[{"file":"image1.png","w":null,"h":null},{"file":"image2.png","w":null,"h":null},{"file":"image3.png","w":null,"h":null},{"file":"image4.png","w":null,"h":null}]});
+window.transferTriviaRegisterMeta("cell-6-3", {"clueId":"cell-6-3","slide":33,"category":"Kohler M340","points":"600","badges":[],"mediaClass":"tt-answer-media-1up","media":[{"file":"image1.png","w":null,"h":null}]});

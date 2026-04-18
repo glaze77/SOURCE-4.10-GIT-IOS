@@ -1,1 +1,1 @@
-window.transferTriviaRegisterMeta("cell-4-0", {"clueId":"cell-4-0","slide":20,"category":"Types of Transfer","points":"400","badges":[],"mediaClass":"","media":[{"file":"image1.png","w":4034243,"h":1735585},{"file":"image2.png","w":6220693,"h":533474}]});
+window.transferTriviaRegisterMeta("cell-4-0", {"clueId":"cell-4-0","slide":20,"category":"Types of Transfer","points":"400","badges":[],"mediaClass":"tt-answer-media-1up","media":[{"file":"image1.png","w":4034243,"h":1735585}]});

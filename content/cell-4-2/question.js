@@ -1,1 +1,1 @@
-window.transferTriviaRegisterQuestion('cell-4-2', "According to the picture of the led diagnostic bar, what is 9c telling us?\n");
+window.transferTriviaRegisterQuestion('cell-4-2', "According to the LED diagnostic bar image, what is 9C indicating?");

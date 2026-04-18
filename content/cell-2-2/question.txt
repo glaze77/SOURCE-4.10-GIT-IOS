@@ -1,1 +1,1 @@
-Which device will allow/disallow a technician to isolate?
+Which device enables or prevents a technician from isolating?

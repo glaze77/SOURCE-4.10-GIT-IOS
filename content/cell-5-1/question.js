@@ -1,1 +1,1 @@
-window.transferTriviaRegisterQuestion('cell-5-1', "Manual override, time delay, plant exerciser, volt/frequency, phase sequencer, and in-phase monitor can be enabled or disabled where? What page has the description of all these jumpers?\n");
+window.transferTriviaRegisterQuestion('cell-5-1', "Where can the following features be enabled or disabled, and on what manual page are all settings described?\n\n\u2022 Manual Override\n\u2022 Time Delay\n\u2022 Plant Exerciser\n\u2022 Volt / Frequency\n\u2022 Phase Sequencer\n\u2022 In-Phase Monitor");

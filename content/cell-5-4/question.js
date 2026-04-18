@@ -1,1 +1,1 @@
-window.transferTriviaRegisterQuestion('cell-5-4', "How are the schematics drawn?\n");
+window.transferTriviaRegisterQuestion('cell-5-4', "In what electrical state are the schematics drawn?");

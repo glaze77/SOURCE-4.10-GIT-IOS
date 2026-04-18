@@ -1,1 +1,8 @@
-Manual override, time delay, plant exerciser, volt/frequency, phase sequencer, and in-phase monitor can be enabled or disabled where? What page has the description of all these jumpers?
+Where can the following features be enabled or disabled, and on what manual page are all settings described?
+
+• Manual Override
+• Time Delay
+• Plant Exerciser
+• Volt / Frequency
+• Phase Sequencer
+• In-Phase Monitor

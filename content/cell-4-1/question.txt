@@ -1,1 +1,1 @@
-Which toggle switch resets the asco 434 from a “ATS LOCKed OUT”?
+Which toggle switch resets the ASCO 434 from an "ATS Locked Out" condition?

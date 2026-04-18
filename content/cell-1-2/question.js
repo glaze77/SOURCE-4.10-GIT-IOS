@@ -1,1 +1,1 @@
-window.transferTriviaRegisterQuestion('cell-1-2', "What type of transfer happens in an asco 434 when there is a loss of commercial/normal power\n");
+window.transferTriviaRegisterQuestion('cell-1-2', "What type of transfer does an ASCO 434 perform when normal source power is lost?");

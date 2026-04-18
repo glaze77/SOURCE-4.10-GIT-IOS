@@ -1,1 +1,1 @@
-You initiate a transfer, none occurs. Which prompt would be shown on the LCD display?
+You initiate a transfer, but none occurs. Which prompt would be shown on the LCD Display?

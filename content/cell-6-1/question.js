@@ -1,1 +1,1 @@
-window.transferTriviaRegisterQuestion('cell-6-1', "On the asco 962, which ts-auxiliary contacts close to provide a transfer to emergency?\n");
+window.transferTriviaRegisterQuestion('cell-6-1', "On the ASCO 962, which TS-Auxiliary contacts close to provide a transfer to emergency?");

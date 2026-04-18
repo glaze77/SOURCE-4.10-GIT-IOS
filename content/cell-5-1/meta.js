@@ -1,1 +1,1 @@
-window.transferTriviaRegisterMeta("cell-5-1", {"clueId":"cell-5-1","slide":26,"category":"Bypass/Isolation","points":"500","badges":["two-part"],"mediaClass":"","media":[{"file":"image1.png","w":3829584,"h":3115110},{"file":"image2.png","w":4531983,"h":5970178}]});
+window.transferTriviaRegisterMeta("cell-5-1", {"clueId":"cell-5-1","slide":26,"category":"Bypass/Isolation","points":"500","badges":["two-part"],"mediaClass":"tt-answer-media-1up","media":[{"file":"image1.png","w":3829584,"h":3115110}]});

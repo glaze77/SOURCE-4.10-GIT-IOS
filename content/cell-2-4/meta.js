@@ -1,1 +1,1 @@
-window.transferTriviaRegisterMeta("cell-2-4", {"clueId":"cell-2-4","slide":14,"category":"Schematics","points":"200","badges":["two-part"],"mediaClass":"","media":[{"file":"image1.png","w":1267441,"h":2153287},{"file":"image2.png","w":4282217,"h":1971612}]});
+window.transferTriviaRegisterMeta("cell-2-4", {"clueId":"cell-2-4","slide":14,"category":"Schematics","points":"200","badges":["two-part"],"mediaClass":"tt-answer-media-1up","media":[{"file":"image1.png","w":1267441,"h":2153287}]});
