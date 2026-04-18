@@ -7760,7 +7760,7 @@ window.transferTriviaDeck = {};
     if (kind === "answer") {
       media = Array.isArray(meta.answerMedia) ? meta.answerMedia : (Array.isArray(meta.media) ? meta.media : []);
     } else if (kind === "question") {
-      media = Array.isArray(meta.questionMedia) ? meta.questionMedia : (Array.isArray(meta.media) ? meta.media : []);
+      media = Array.isArray(meta.questionMedia) ? meta.questionMedia : [];
     } else {
       media = Array.isArray(meta.media) ? meta.media : [];
     }
@@ -7991,7 +7991,7 @@ window.transferTriviaDeck = {};
     var meta = (entry && entry.meta) || {};
     var showQuestionMedia = ttQuestionMediaEnabled(meta);
     if (!showQuestionMedia) return "";
-    var media = Array.isArray(meta.questionMedia) ? meta.questionMedia : (Array.isArray(meta.media) ? meta.media : []);
+    var media = Array.isArray(meta.questionMedia) ? meta.questionMedia : [];
     if (!media.length) return "";
     var item = media[0];
     if (media.length > 1) {
