@@ -3610,6 +3610,9 @@ if (CLEAN_MODE) {
 
 
             window.addEventListener("keydown", function(e){
+                if(typeof window.isPlayerNameEditorOpen === "function" && window.isPlayerNameEditorOpen()){
+                    return;
+                }
                 var BACKTICK = 192;
                 var SPACE = 32
                 var ENTER = 13;
@@ -5209,6 +5212,16 @@ function ensureBoardTextVisibleDuringGameplay(){
             openGlobalPlayerPanel();
         }
     }
+
+    function isPlayerNameEditorOpen(){
+        var intro = document.getElementById('intro-overlay');
+        if(intro && intro.classList.contains('player-panel-open')){
+            return true;
+        }
+        var globalLayer = document.getElementById('tt-global-player-layer');
+        return !!(globalLayer && globalLayer.classList.contains('open'));
+    }
+    window.isPlayerNameEditorOpen = isPlayerNameEditorOpen;
 
     function toggleIntroSoundPanel(e){
         if(e){
@@ -7434,6 +7447,7 @@ function ensureBoardTextVisibleDuringGameplay(){
             document.addEventListener("keydown", function(e){
                 var key = e.key || "";
                 if(key !== "v" && key !== "V"){ return; }
+                if(typeof window.isPlayerNameEditorOpen === "function" && window.isPlayerNameEditorOpen()){ return; }
                 var target = e.target;
                 var tag = target && target.tagName ? target.tagName.toLowerCase() : "";
                 if(tag === "input" || tag === "textarea" || tag === "select" || (target && target.isContentEditable)){ return; }
@@ -9173,6 +9187,7 @@ window.transferTriviaDeck = {};
 
   window.addEventListener("keydown", function(e){
     if (e.key !== "c" && e.key !== "C") return;
+    if (typeof window.isPlayerNameEditorOpen === "function" && window.isPlayerNameEditorOpen()) return;
     e.preventDefault();
     if (typeof window.playCorrectSound === "function") {
       window.playCorrectSound();
@@ -9180,6 +9195,7 @@ window.transferTriviaDeck = {};
   }, true);
 
   document.addEventListener("keydown", function(e) {
+    if (typeof window.isPlayerNameEditorOpen === "function" && window.isPlayerNameEditorOpen()) return;
     if (!modal.is_open) return;
     if ((e.key === "a" || e.key === "A")) {
       e.preventDefault();
