@@ -1,1 +1,1 @@
-*On an ASCO 434, what type of transfer is initiated by the technician using Feature 6B?
+On an ASCO 434, what type of transfer is initiated by the technician using Feature 6B?
