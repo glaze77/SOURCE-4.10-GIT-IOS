@@ -4538,7 +4538,7 @@ if (CLEAN_MODE) {
             + '    <button type="button" class="tt-hint-action-btn primary" id="tt-hint-give-btn">Give Hint (50%)</button>'
             + '    <button type="button" class="tt-hint-action-btn" id="tt-hint-close-btn">Close</button>'
             + '  </div>'
-            + '  <div class="tt-hint-note">If a hint is given, this clue is worth 50% points.</div>'
+            + '  <div class="tt-hint-note">Using a hint reduces this clue\'s point value by 50%.</div>'
             + '</div>';
         document.body.appendChild(hub);
 
@@ -5896,7 +5896,7 @@ function ensureBoardTextVisibleDuringGameplay(){
         var multiplier = getCluePointMultiplier(entry);
         return {
             label: label,
-            detail: multiplier > 1 ? ("Rule: This clue is worth " + multiplier + "x points.") : ""
+            detail: multiplier > 1 ? ("This clue is worth " + multiplier + "x points.") : ""
         };
     }
 
