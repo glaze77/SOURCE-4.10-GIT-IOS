@@ -8633,6 +8633,109 @@ window.transferTriviaDeck = {};
     return true;
   }
 
+  var IMAGE_ADD_EXTS = { png: true, jpg: true, jpeg: true, webp: true };
+
+  function nextImageName(cellId, surface, uploadedFileName) {
+    var ext = (uploadedFileName || "").split(".").pop().toLowerCase();
+    if (!IMAGE_ADD_EXTS[ext]) return null;
+    var deck = window.transferTriviaDeck || {};
+    var entry = deck[cellId] || {};
+    var meta = entry.meta || {};
+    var mediaKey = surface === "question" ? "questionMedia" : "answerMedia";
+    var mediaArr = Array.isArray(meta[mediaKey]) ? meta[mediaKey]
+      : (Array.isArray(meta.media) ? meta.media : []);
+    var maxN = 0;
+    mediaArr.forEach(function(obj) {
+      var rank = ttFileSortRank(ttFileBaseName((obj && obj.file) || ""));
+      if (rank.n !== 9999 && rank.n > maxN) maxN = rank.n;
+    });
+    if (maxN >= 12) return null;
+    var folder = surface === "question" ? "question-images" : "answer-images";
+    return folder + "/image" + (maxN + 1) + "." + ext;
+  }
+
+  function applyMediaAddition(cellId, surface, newFile) {
+    var deck = window.transferTriviaDeck || {};
+    var entry = deck[cellId];
+    if (!entry || !entry.meta) return;
+    var meta = entry.meta;
+    var mediaKey = surface === "question" ? "questionMedia" : "answerMedia";
+    var newObjs = ttBuildMediaObjects(cellId, [newFile]);
+    var newObj = newObjs[0];
+    if (!Array.isArray(meta[mediaKey])) meta[mediaKey] = [];
+    meta[mediaKey].push(newObj);
+    if (surface === "answer") {
+      if (!Array.isArray(meta.media)) meta.media = [];
+      meta.media.push(newObj);
+    }
+    Object.keys(ttMediaDiscoveryResults).forEach(function(k) {
+      if (k.indexOf(cellId + "::") === 0) delete ttMediaDiscoveryResults[k];
+    });
+    Object.keys(ttMediaDiscoveryPromises).forEach(function(k) {
+      if (k.indexOf(cellId + "::") === 0) delete ttMediaDiscoveryPromises[k];
+    });
+    rerenderActiveCluePreservingModalState();
+  }
+
+  function beginImageAdd(surface) {
+    if (!editorState.isEditMode) return false;
+    var cellId = window.ttCurrentClueId || "";
+    if (!cellId) return false;
+    if (!surface) surface = "answer";
+    var input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/png,image/jpeg,image/webp";
+    input.style.cssText = "position:fixed;left:-9999px;opacity:0;pointer-events:none;";
+    document.body.appendChild(input);
+    input.addEventListener("cancel", function() {
+      if (document.body.contains(input)) document.body.removeChild(input);
+    });
+    input.addEventListener("change", function() {
+      if (document.body.contains(input)) document.body.removeChild(input);
+      if (!input.files || !input.files.length) return;
+      var file = input.files[0];
+      var deck = window.transferTriviaDeck || {};
+      var entry = deck[cellId];
+      if (!entry) { showSaveStatus("No active clue"); return; }
+      ttDiscoverMediaForCell(cellId, entry).then(function(updatedEntry) {
+        if (updatedEntry) deck[cellId] = updatedEntry;
+        var filename = nextImageName(cellId, surface, file.name);
+        if (!filename) {
+          showSaveStatus("Add image blocked — max 12 or bad extension");
+          return;
+        }
+        showSaveStatus("Saving image…");
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+          fetch("http://127.0.0.1:5174/api/import-image", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              cellId: cellId,
+              surface: surface,
+              filename: filename.split("/").pop(),
+              data: ev.target.result
+            })
+          })
+            .then(function(resp) { return resp.json(); })
+            .then(function(data) {
+              if (data && data.ok) {
+                applyMediaAddition(cellId, surface, filename);
+                showSaveStatus("Image added");
+              } else {
+                showSaveStatus("Image import failed");
+              }
+            })
+            .catch(function() { showSaveStatus("Image import failed"); });
+        };
+        reader.onerror = function() { showSaveStatus("Image read failed"); };
+        reader.readAsDataURL(file);
+      });
+    });
+    input.click();
+    return true;
+  }
+
   function beginInlineTextEdit(targetEl, entity) {
     if (!editorState.isEditMode || !targetEl || !entity || entity.entityId !== "text") return false;
     if (editorState.activeTextEdit) {
@@ -8877,6 +8980,18 @@ window.transferTriviaDeck = {};
     window.addEventListener("keyup", handleEditorShortcut, true);
     document.addEventListener("keydown", handleEditorUndo, true);
     document.addEventListener("keydown", handleEditorSave, true);
+    document.addEventListener("keydown", function handleEditorImageAdd(e) {
+      if (!editorState.isEditMode) return;
+      if (!(e.shiftKey) || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.key !== "A" && e.key !== "a") return;
+      var active = document.activeElement;
+      if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.isContentEditable)) return;
+      if (!window.ttCurrentClueId) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof e.stopImmediatePropagation === "function") e.stopImmediatePropagation();
+      beginImageAdd("answer");
+    }, true);
   }
 
   installEditorEventHandlers();
@@ -8903,6 +9018,9 @@ window.transferTriviaDeck = {};
     beginImageReplace: beginImageReplace,
     importImageToContentFolder: importImageToContentFolder,
     applyMediaReplacement: applyMediaReplacement,
+    nextImageName: nextImageName,
+    applyMediaAddition: applyMediaAddition,
+    beginImageAdd: beginImageAdd,
     syncHintBoxContent: syncHintBoxContent,
     applyCategoryEntityMarkers: applyCategoryEntityMarkers,
     clearCategoryEntityMarkers: clearCategoryEntityMarkers,
