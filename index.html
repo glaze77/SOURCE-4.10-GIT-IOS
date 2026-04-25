@@ -8214,7 +8214,9 @@ window.transferTriviaDeck = {};
       activeTextEdit: null,
       dirty: false,
       dirtyWrites: {},
-      undoHistory: {}
+      dirtyCategories: {},
+      undoHistory: {},
+      categoryUndoStack: []
     };
   }
 
@@ -8270,7 +8272,9 @@ window.transferTriviaDeck = {};
     applyEditorEntityMarkers();
     if (!editorState.isEditMode) {
       clearEditorSelection();
+      clearCategoryEntityMarkers();
     } else {
+      applyCategoryEntityMarkers();
       syncEditorSelectionHighlight();
     }
     console.log("Transfer Trivia edit mode:", editorState.isEditMode ? "on" : "off");
@@ -8745,8 +8749,19 @@ window.transferTriviaDeck = {};
 
   function handleEditorSelectionClick(e) {
     if (!editorState.isEditMode) return;
-    if (editorState.activeTextEdit && e.target && e.target.closest && e.target.closest(".tt-inline-editor-textarea")) {
+    if (e.target && e.target.closest && e.target.closest(".tt-inline-editor-textarea")) {
       return;
+    }
+    var catTarget = e.target && e.target.closest ? e.target.closest("[data-tt-editor-category-index]") : null;
+    if (catTarget) {
+      var colIndex = parseInt(catTarget.getAttribute("data-tt-editor-category-index"), 10);
+      if (!isNaN(colIndex)) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof e.stopImmediatePropagation === "function") e.stopImmediatePropagation();
+        beginCategoryEdit(catTarget, colIndex);
+        return;
+      }
     }
     var target = e.target && e.target.closest ? e.target.closest(".tt-editable-entity") : null;
     if (!target) return;
@@ -8805,6 +8820,16 @@ window.transferTriviaDeck = {};
       var active = document.activeElement;
       if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.isContentEditable)) return;
       if (!(e.ctrlKey || e.metaKey) || e.key !== "z" || e.shiftKey) return;
+      if (editorState.categoryUndoStack.length) {
+        var entry = editorState.categoryUndoStack.pop();
+        var catCells = document.querySelectorAll(".grid-row-cats .cat-cell");
+        var el = catCells[entry.colIndex];
+        if (el) { el.textContent = entry.before; }
+        editorState.dirtyCategories[entry.colIndex] = true;
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
       if (!undoTextEdit()) return;
       e.preventDefault();
       e.stopPropagation();
@@ -8814,7 +8839,10 @@ window.transferTriviaDeck = {};
       if (!editorState.isEditMode) return;
       if (!(e.ctrlKey || e.metaKey) || e.key !== "s") return;
       e.preventDefault();
+      var activeCatTextarea = document.querySelector(".grid-row-cats .cat-cell .tt-inline-editor-textarea");
+      if (activeCatTextarea) { activeCatTextarea.blur(); }
       saveEditorTextChanges();
+      if (Object.keys(editorState.dirtyCategories).length) { saveCategoryLabels(); }
     }
 
     document.addEventListener("click", handleEditorSelectionClick, true);
@@ -8849,7 +8877,11 @@ window.transferTriviaDeck = {};
     saveEditorTextChanges: saveEditorTextChanges,
     beginImageReplace: beginImageReplace,
     importImageToContentFolder: importImageToContentFolder,
-    applyMediaReplacement: applyMediaReplacement
+    applyMediaReplacement: applyMediaReplacement,
+    applyCategoryEntityMarkers: applyCategoryEntityMarkers,
+    clearCategoryEntityMarkers: clearCategoryEntityMarkers,
+    beginCategoryEdit: beginCategoryEdit,
+    saveCategoryLabels: saveCategoryLabels
   };
   window.transferTriviaIsEditMode = isEditModeActive;
   window.transferTriviaIsEditorTextEditing = isTextEditActive;
@@ -8873,6 +8905,114 @@ window.transferTriviaDeck = {};
   }
 
   loadCategoryOverrides();
+
+  function applyCategoryEntityMarkers() {
+    if (!editorState.isEditMode) return;
+    document.querySelectorAll(".grid-row-cats .cat-cell").forEach(function(el, i) {
+      el.classList.add("tt-editable-entity");
+      el.setAttribute("data-tt-editor-category-index", String(i));
+      el.setAttribute("data-tt-editor-key", "board::col" + i + "::category");
+    });
+  }
+
+  function clearCategoryEntityMarkers() {
+    document.querySelectorAll(".grid-row-cats .cat-cell").forEach(function(el) {
+      el.classList.remove("tt-editable-entity", "tt-editor-selected", "tt-inline-editing");
+      el.removeAttribute("data-tt-editor-category-index");
+      el.removeAttribute("data-tt-editor-key");
+    });
+  }
+
+  function beginCategoryEdit(catCellEl, colIndex) {
+    if (!editorState.isEditMode || !catCellEl) return false;
+    if (editorState.activeTextEdit) {
+      commitTextEdit();
+    }
+    var originalText = catCellEl.textContent;
+    catCellEl.classList.add("tt-inline-editing");
+    catCellEl.textContent = "";
+
+    var textarea = document.createElement("textarea");
+    textarea.className = "tt-inline-editor-textarea";
+    textarea.value = originalText;
+    textarea.setAttribute("role", "textbox");
+    textarea.setAttribute("aria-label", "Edit category label");
+
+    var committed = false;
+
+    function commitCategory() {
+      if (committed) return;
+      committed = true;
+      var value = textarea.value;
+      catCellEl.classList.remove("tt-inline-editing");
+      if (value !== originalText) {
+        editorState.categoryUndoStack.push({ colIndex: colIndex, before: originalText, after: value });
+      }
+      catCellEl.textContent = value;
+      editorState.dirtyCategories[colIndex] = true;
+      editorState.selectedEntity = {
+        cellId: "board",
+        surface: "col" + colIndex,
+        entityId: "category",
+        key: "board::col" + colIndex + "::category"
+      };
+      syncEditorSelectionHighlight();
+    }
+
+    function cancelCategory() {
+      if (committed) return;
+      committed = true;
+      catCellEl.classList.remove("tt-inline-editing");
+      catCellEl.textContent = originalText;
+      editorState.selectedEntity = {
+        cellId: "board",
+        surface: "col" + colIndex,
+        entityId: "category",
+        key: "board::col" + colIndex + "::category"
+      };
+      syncEditorSelectionHighlight();
+    }
+
+    textarea.addEventListener("click", function(e) { e.stopPropagation(); });
+    textarea.addEventListener("keydown", function(e) {
+      e.stopPropagation();
+      if (typeof e.stopImmediatePropagation === "function") e.stopImmediatePropagation();
+      if (e.key === "Escape") { e.preventDefault(); cancelCategory(); return; }
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); commitCategory(); }
+    });
+    textarea.addEventListener("blur", function() { commitCategory(); });
+
+    catCellEl.appendChild(textarea);
+    requestAnimationFrame(function() { textarea.focus(); var len = textarea.value.length; textarea.setSelectionRange(len, len); });
+    return true;
+  }
+
+  function saveCategoryLabels() {
+    var keys = Object.keys(editorState.dirtyCategories);
+    if (!keys.length) return;
+    var catCells = document.querySelectorAll(".grid-row-cats .cat-cell");
+    var categories = Array.prototype.map.call(catCells, function(el) {
+      var activeTextarea = el.querySelector(".tt-inline-editor-textarea");
+      return activeTextarea ? activeTextarea.value : el.textContent;
+    });
+    fetch("http://127.0.0.1:5174/api/write-json", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path: "content/categories.json", json: { categories: categories } })
+    })
+      .then(function(resp) { return resp.json(); })
+      .then(function(data) {
+        if (data && data.ok) {
+          editorState.dirtyCategories = {};
+          showSaveStatus("Saved");
+        } else {
+          showSaveStatus("Save failed – helper not running");
+        }
+      })
+      .catch(function() {
+        showSaveStatus("Save failed – helper not running");
+      });
+  }
 
   var TT_LAYOUT_KEY = "ttQALayoutV1";
   var TT_LAYOUT_STORE_KEY = "ttQALayoutStoreV1";
