@@ -8517,6 +8517,104 @@ window.transferTriviaDeck = {};
     return true;
   }
 
+  function applyMediaReplacement(entity, targetFilename) {
+    var deck = window.transferTriviaDeck || {};
+    var entry = deck[entity.cellId];
+    if (!entry || !entry.meta) return;
+    var meta = entry.meta;
+    var mediaKey = entity.surface === "question" ? "questionMedia" : "answerMedia";
+    var mediaArr = Array.isArray(meta[mediaKey]) ? meta[mediaKey]
+      : (Array.isArray(meta.media) ? meta.media : []);
+    var currentObj = mediaArr[entity.mediaIndex];
+    if (!currentObj || !currentObj.file) return;
+    var baseFile = currentObj.file.split("?")[0];
+    var newSrc = "./content/" + entity.cellId + "/" + baseFile + "?cb=" + Date.now();
+    var newObj = { file: baseFile, src: newSrc };
+    if (Array.isArray(meta[mediaKey])) {
+      meta[mediaKey][entity.mediaIndex] = newObj;
+    }
+    if (entity.surface === "answer" && Array.isArray(meta.media) && entity.mediaIndex < meta.media.length) {
+      meta.media[entity.mediaIndex] = newObj;
+    }
+    Object.keys(ttMediaDiscoveryResults).forEach(function(k) {
+      if (k.indexOf(entity.cellId + "::") === 0) delete ttMediaDiscoveryResults[k];
+    });
+    Object.keys(ttMediaDiscoveryPromises).forEach(function(k) {
+      if (k.indexOf(entity.cellId + "::") === 0) delete ttMediaDiscoveryPromises[k];
+    });
+    rerenderActiveCluePreservingModalState();
+    if (editorState.isEditMode) {
+      selectEditableEntity(entity);
+    }
+  }
+
+  function importImageToContentFolder(entity, targetFilename, dataUrl) {
+    showSaveStatus("Saving image…");
+    fetch("http://127.0.0.1:5174/api/import-image", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        cellId: entity.cellId,
+        surface: entity.surface,
+        filename: targetFilename,
+        data: dataUrl
+      })
+    })
+      .then(function(resp) { return resp.json(); })
+      .then(function(data) {
+        if (data && data.ok) {
+          applyMediaReplacement(entity, targetFilename);
+          showSaveStatus("Image saved");
+        } else {
+          showSaveStatus("Image import failed");
+        }
+      })
+      .catch(function() {
+        showSaveStatus("Image import failed");
+      });
+  }
+
+  function beginImageReplace(entity) {
+    if (!editorState.isEditMode) return false;
+    if (!entity || !entity.cellId || !entity.surface) return false;
+    if (!entity.entityId || entity.entityId.indexOf("media[") !== 0) return false;
+    var deck = window.transferTriviaDeck || {};
+    var entry = deck[entity.cellId];
+    var meta = (entry && entry.meta) || {};
+    var mediaKey = entity.surface === "question" ? "questionMedia" : "answerMedia";
+    var mediaArr = Array.isArray(meta[mediaKey]) ? meta[mediaKey]
+      : (Array.isArray(meta.media) ? meta.media : []);
+    var currentObj = mediaArr[entity.mediaIndex];
+    if (!currentObj || !currentObj.file) {
+      showSaveStatus("No image slot to replace");
+      return false;
+    }
+    var targetFilename = currentObj.file.split("?")[0].split("/").pop();
+    var input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.style.cssText = "position:fixed;left:-9999px;opacity:0;pointer-events:none;";
+    document.body.appendChild(input);
+    input.addEventListener("cancel", function() {
+      if (document.body.contains(input)) document.body.removeChild(input);
+    });
+    input.addEventListener("change", function() {
+      document.body.removeChild(input);
+      if (!input.files || !input.files.length) return;
+      var file = input.files[0];
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        importImageToContentFolder(entity, targetFilename, e.target.result);
+      };
+      reader.onerror = function() {
+        showSaveStatus("Image read failed");
+      };
+      reader.readAsDataURL(file);
+    });
+    input.click();
+    return true;
+  }
+
   function beginInlineTextEdit(targetEl, entity) {
     if (!editorState.isEditMode || !targetEl || !entity || entity.entityId !== "text") return false;
     if (editorState.activeTextEdit) {
@@ -8661,6 +8759,8 @@ window.transferTriviaDeck = {};
     selectEditableEntity(entity);
     if (entity && entity.entityId === "text") {
       beginInlineTextEdit(target, entity);
+    } else if (entity && entity.entityId.indexOf("media[") === 0) {
+      beginImageReplace(entity);
     }
   }
 
@@ -8746,7 +8846,10 @@ window.transferTriviaDeck = {};
     isEditModeActive: isEditModeActive,
     isTextEditActive: isTextEditActive,
     undoTextEdit: undoTextEdit,
-    saveEditorTextChanges: saveEditorTextChanges
+    saveEditorTextChanges: saveEditorTextChanges,
+    beginImageReplace: beginImageReplace,
+    importImageToContentFolder: importImageToContentFolder,
+    applyMediaReplacement: applyMediaReplacement
   };
   window.transferTriviaIsEditMode = isEditModeActive;
   window.transferTriviaIsEditorTextEditing = isTextEditActive;
