@@ -1,1 +1,1 @@
-This type of transfer causes a momentary loss of power to the load.
+*This type of transfer causes a momentary loss of power to the load.
