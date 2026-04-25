@@ -8305,7 +8305,7 @@ window.transferTriviaDeck = {};
       surface: String(entity.surface || ""),
       entityId: String(entity.entityId || "")
     };
-    if (!normalized.cellId || (normalized.surface !== "question" && normalized.surface !== "answer") || !normalized.entityId) {
+    if (!normalized.cellId || (normalized.surface !== "question" && normalized.surface !== "answer" && normalized.surface !== "hint") || !normalized.entityId) {
       return null;
     }
     if (typeof entity.mediaIndex === "number") {
@@ -8361,6 +8361,9 @@ window.transferTriviaDeck = {};
     if (entity.surface === "answer") {
       return String(entry.answer == null ? "" : entry.answer).replace(/\r/g, "");
     }
+    if (entity.surface === "hint") {
+      return String(entry.hint == null ? "" : entry.hint).replace(/\r/g, "");
+    }
     return "";
   }
 
@@ -8374,6 +8377,9 @@ window.transferTriviaDeck = {};
       deck[entity.cellId].question = String(value == null ? "" : value);
     } else if (entity.surface === "answer") {
       deck[entity.cellId].answer = String(value == null ? "" : value);
+    } else if (entity.surface === "hint") {
+      deck[entity.cellId].hint = String(value == null ? "" : value);
+      syncHintBoxContent(entity.cellId);
     } else {
       return false;
     }
@@ -8391,6 +8397,13 @@ window.transferTriviaDeck = {};
       return true;
     }
     return false;
+  }
+
+  function syncHintBoxContent(cellId) {
+    var hintBox = document.getElementById("tt-hint-box");
+    if (!hintBox) return;
+    var entry = (window.transferTriviaDeck || {})[cellId] || {};
+    hintBox.textContent = typeof entry.hint === "string" ? entry.hint : "";
   }
 
   function finishTextEdit(options) {
@@ -8425,6 +8438,7 @@ window.transferTriviaDeck = {};
         selectEditableEntity(entity);
       }
     } else {
+      if (entity && entity.surface === "hint") { syncHintBoxContent(entity.cellId); }
       rerenderActiveCluePreservingModalState();
       if (editorState.isEditMode) {
         selectEditableEntity(entity);
@@ -8633,7 +8647,7 @@ window.transferTriviaDeck = {};
     textarea.className = "tt-inline-editor-textarea";
     textarea.value = text;
     textarea.setAttribute("role", "textbox");
-    textarea.setAttribute("aria-label", entity.surface === "question" ? "Edit question text" : "Edit answer text");
+    textarea.setAttribute("aria-label", entity.surface === "question" ? "Edit question text" : entity.surface === "hint" ? "Edit hint text" : "Edit answer text");
     textarea.addEventListener("click", function(e) {
       e.stopPropagation();
     });
@@ -8717,6 +8731,17 @@ window.transferTriviaDeck = {};
         mediaIndex: mediaIndex
       });
     });
+
+    var hintBox = document.getElementById("tt-hint-box");
+    if (hintBox) {
+      hintBox.classList.remove("tt-editable-entity", "tt-editor-selected");
+      hintBox.removeAttribute("data-tt-editor-cell-id");
+      hintBox.removeAttribute("data-tt-editor-surface");
+      hintBox.removeAttribute("data-tt-editor-entity-id");
+      hintBox.removeAttribute("data-tt-editor-key");
+      hintBox.removeAttribute("data-tt-editor-media-index");
+      markEditorEntity(hintBox, { cellId: cellId, surface: "hint", entityId: "text" });
+    }
 
     syncEditorSelectionHighlight();
   }
@@ -8878,6 +8903,7 @@ window.transferTriviaDeck = {};
     beginImageReplace: beginImageReplace,
     importImageToContentFolder: importImageToContentFolder,
     applyMediaReplacement: applyMediaReplacement,
+    syncHintBoxContent: syncHintBoxContent,
     applyCategoryEntityMarkers: applyCategoryEntityMarkers,
     clearCategoryEntityMarkers: clearCategoryEntityMarkers,
     beginCategoryEdit: beginCategoryEdit,
@@ -10050,6 +10076,7 @@ window.transferTriviaDeck = {};
       });
     };
     renderModalEntry(entry);
+    syncHintBoxContent(cellId);
 
     ttDiscoverMediaForCell(cellId, entry).then(function(nextEntry) {
       if (!nextEntry || ttCurrentClueId !== cellId) return;
@@ -11223,6 +11250,7 @@ window.transferTriviaDeck = {};
       deck[cellId] = {
         question: "",
         answer: "",
+        hint: "",
         meta: {}
       };
     }
@@ -11317,11 +11345,13 @@ window.transferTriviaDeck = {};
     return Promise.allSettled([
       fetchText(base + 'question.txt'),
       fetchText(base + 'answer.txt'),
-      fetchJson(base + 'meta.json')
+      fetchJson(base + 'meta.json'),
+      fetchText(base + 'hint.txt')
     ]).then(function(results){
       var questionOk = results[0] && results[0].status === 'fulfilled';
       var answerOk = results[1] && results[1].status === 'fulfilled';
       var metaOk = results[2] && results[2].status === 'fulfilled';
+      var hintText = (results[3] && results[3].status === 'fulfilled') ? String(results[3].value == null ? '' : results[3].value) : '';
 
       status.questionLoaded = questionOk && !!String(results[0].value == null ? '' : results[0].value).trim();
       status.answerLoaded = answerOk && !!String(results[1].value == null ? '' : results[1].value).trim();
@@ -11346,6 +11376,7 @@ window.transferTriviaDeck = {};
       window.transferTriviaDeck[cellId] = {
         question: String(results[0].value == null ? '' : results[0].value),
         answer: String(results[1].value == null ? '' : results[1].value),
+        hint: hintText,
         meta: meta
       };
     }).catch(function(err){
