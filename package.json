@@ -1,0 +1,5 @@
+{
+  "scripts": {
+    "helper": "node node-helper/server.js"
+  }
+}
