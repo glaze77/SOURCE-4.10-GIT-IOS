@@ -1023,6 +1023,58 @@ kbd.tt-hotkey {
 .tt-answer-parts .tt-inline-editor-textarea {
   min-height: 150px;
 }
+.tt-editor-add-image-btn {
+  display: none;
+}
+.tt-edit-mode .tt-editor-add-image-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 12px 16px;
+  margin-top: 8px;
+  border: 2px dashed rgba(125, 210, 255, 0.55);
+  border-radius: 12px;
+  background: rgba(125, 210, 255, 0.06);
+  color: rgba(125, 210, 255, 0.85);
+  font: 700 13px/1 system-ui, -apple-system, sans-serif;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.tt-edit-mode .tt-editor-add-image-btn:hover {
+  background: rgba(125, 210, 255, 0.14);
+  border-color: rgba(125, 210, 255, 0.85);
+}
+.tt-editor-image-menu {
+  position: fixed;
+  z-index: 25000;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 5px;
+  background: rgba(8, 13, 36, 0.97);
+  border: 1px solid rgba(255, 226, 112, 0.45);
+  border-radius: 10px;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.45);
+}
+.tt-editor-image-menu button {
+  display: block;
+  width: 100%;
+  padding: 9px 18px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: #fff;
+  font: 700 13px/1 system-ui, -apple-system, sans-serif;
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+}
+.tt-editor-image-menu button:hover { background: rgba(255,255,255,0.08); }
+.tt-editor-image-menu .tt-editor-image-menu-delete { color: #ff9090; }
+.tt-editor-image-menu .tt-editor-image-menu-delete:hover { background: rgba(255,80,80,0.18); }
 
 /* Clue splash overlay */
 #tt-clue-splash-overlay {
@@ -8736,6 +8788,113 @@ window.transferTriviaDeck = {};
     return true;
   }
 
+  var _activeImageMenu = null;
+
+  function dismissImageActionMenu() {
+    if (_activeImageMenu && _activeImageMenu.parentNode) {
+      _activeImageMenu.parentNode.removeChild(_activeImageMenu);
+    }
+    _activeImageMenu = null;
+  }
+
+  function showImageActionMenu(entity, targetEl, event) {
+    dismissImageActionMenu();
+    var menu = document.createElement("div");
+    menu.className = "tt-editor-image-menu";
+
+    var replaceBtn = document.createElement("button");
+    replaceBtn.type = "button";
+    replaceBtn.textContent = "Replace Image";
+    replaceBtn.addEventListener("click", function(e) {
+      e.stopPropagation();
+      dismissImageActionMenu();
+      beginImageReplace(entity);
+    });
+
+    var deleteBtn = document.createElement("button");
+    deleteBtn.type = "button";
+    deleteBtn.className = "tt-editor-image-menu-delete";
+    deleteBtn.textContent = "Delete Image";
+    deleteBtn.addEventListener("click", function(e) {
+      e.stopPropagation();
+      dismissImageActionMenu();
+      deleteImageAtEntity(entity);
+    });
+
+    menu.appendChild(replaceBtn);
+    menu.appendChild(deleteBtn);
+    document.body.appendChild(menu);
+    _activeImageMenu = menu;
+
+    var x = event.clientX;
+    var y = event.clientY;
+    menu.style.left = x + "px";
+    menu.style.top = y + "px";
+    requestAnimationFrame(function() {
+      var rect = menu.getBoundingClientRect();
+      if (rect.right > window.innerWidth - 8) {
+        menu.style.left = Math.max(8, window.innerWidth - rect.width - 8) + "px";
+      }
+      if (rect.bottom > window.innerHeight - 8) {
+        menu.style.top = Math.max(8, window.innerHeight - rect.height - 8) + "px";
+      }
+    });
+
+    setTimeout(function() {
+      document.addEventListener("click", dismissImageActionMenu, { once: true });
+    }, 0);
+  }
+
+  function applyMediaDeletion(entity) {
+    var deck = window.transferTriviaDeck || {};
+    var entry = deck[entity.cellId];
+    if (!entry || !entry.meta) return;
+    var meta = entry.meta;
+    var mediaKey = entity.surface === "question" ? "questionMedia" : "answerMedia";
+    if (Array.isArray(meta[mediaKey]) && entity.mediaIndex < meta[mediaKey].length) {
+      meta[mediaKey].splice(entity.mediaIndex, 1);
+    }
+    if (entity.surface === "answer" && Array.isArray(meta.media) && entity.mediaIndex < meta.media.length) {
+      meta.media.splice(entity.mediaIndex, 1);
+    }
+    Object.keys(ttMediaDiscoveryResults).forEach(function(k) {
+      if (k.indexOf(entity.cellId + "::") === 0) delete ttMediaDiscoveryResults[k];
+    });
+    Object.keys(ttMediaDiscoveryPromises).forEach(function(k) {
+      if (k.indexOf(entity.cellId + "::") === 0) delete ttMediaDiscoveryPromises[k];
+    });
+    rerenderActiveCluePreservingModalState();
+  }
+
+  function deleteImageAtEntity(entity) {
+    var deck = window.transferTriviaDeck || {};
+    var entry = deck[entity.cellId];
+    if (!entry || !entry.meta) return;
+    var meta = entry.meta;
+    var mediaKey = entity.surface === "question" ? "questionMedia" : "answerMedia";
+    var mediaArr = Array.isArray(meta[mediaKey]) ? meta[mediaKey]
+      : (Array.isArray(meta.media) ? meta.media : []);
+    var currentObj = mediaArr[entity.mediaIndex];
+    if (!currentObj || !currentObj.file) return;
+    var baseFile = currentObj.file.split("?")[0].split("/").pop();
+    showSaveStatus("Deleting image…");
+    fetch("http://127.0.0.1:5174/api/delete-image", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cellId: entity.cellId, surface: entity.surface, filename: baseFile })
+    })
+      .then(function(resp) { return resp.json(); })
+      .then(function(data) {
+        if (data && data.ok) {
+          applyMediaDeletion(entity);
+          showSaveStatus("Image deleted");
+        } else {
+          showSaveStatus("Delete failed");
+        }
+      })
+      .catch(function() { showSaveStatus("Delete failed – helper not running"); });
+  }
+
   function beginInlineTextEdit(targetEl, entity) {
     if (!editorState.isEditMode || !targetEl || !entity || entity.entityId !== "text") return false;
     if (editorState.activeTextEdit) {
@@ -8835,6 +8994,21 @@ window.transferTriviaDeck = {};
       });
     });
 
+    var addImageTarget = modalRoot.querySelector(".tt-answer-media") || modalRoot.querySelector(".tt-answer-main");
+    if (addImageTarget && !addImageTarget.querySelector(".tt-editor-add-image-btn")) {
+      var addBtn = document.createElement("button");
+      addBtn.type = "button";
+      addBtn.className = "tt-editor-add-image-btn";
+      addBtn.textContent = "+ Add Image";
+      addBtn.addEventListener("click", function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof e.stopImmediatePropagation === "function") e.stopImmediatePropagation();
+        beginImageAdd("answer");
+      });
+      addImageTarget.appendChild(addBtn);
+    }
+
     var hintBox = document.getElementById("tt-hint-box");
     if (hintBox) {
       hintBox.classList.remove("tt-editable-entity", "tt-editor-selected");
@@ -8877,6 +9051,8 @@ window.transferTriviaDeck = {};
 
   function handleEditorSelectionClick(e) {
     if (!editorState.isEditMode) return;
+    if (e.target && e.target.closest && e.target.closest(".tt-editor-image-menu")) { return; }
+    dismissImageActionMenu();
     if (e.target && e.target.closest && e.target.closest(".tt-inline-editor-textarea")) {
       return;
     }
@@ -8903,7 +9079,7 @@ window.transferTriviaDeck = {};
     if (entity && entity.entityId === "text") {
       beginInlineTextEdit(target, entity);
     } else if (entity && entity.entityId.indexOf("media[") === 0) {
-      beginImageReplace(entity);
+      showImageActionMenu(entity, target, e);
     }
   }
 
@@ -9021,6 +9197,10 @@ window.transferTriviaDeck = {};
     nextImageName: nextImageName,
     applyMediaAddition: applyMediaAddition,
     beginImageAdd: beginImageAdd,
+    showImageActionMenu: showImageActionMenu,
+    dismissImageActionMenu: dismissImageActionMenu,
+    applyMediaDeletion: applyMediaDeletion,
+    deleteImageAtEntity: deleteImageAtEntity,
     syncHintBoxContent: syncHintBoxContent,
     applyCategoryEntityMarkers: applyCategoryEntityMarkers,
     clearCategoryEntityMarkers: clearCategoryEntityMarkers,

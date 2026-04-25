@@ -251,12 +251,23 @@ async function handleImportImage(body) {
   };
 }
 
+async function handleDeleteImage(body) {
+  const cellId = safeCellId(body.cellId);
+  const folder = imageFolderForSurface(body.surface);
+  const filename = safeImageFilename(body.filename);
+  const relativePath = ["content", cellId, folder, filename].join("/");
+  const filePath = resolveContentPath(relativePath);
+  await fs.promises.unlink(filePath);
+  return { ok: true, path: relativePath };
+}
+
 const routes = {
   "/api/read-text": handleReadText,
   "/api/write-text": handleWriteText,
   "/api/read-json": handleReadJson,
   "/api/write-json": handleWriteJson,
-  "/api/import-image": handleImportImage
+  "/api/import-image": handleImportImage,
+  "/api/delete-image": handleDeleteImage
 };
 
 const server = http.createServer(async (req, res) => {

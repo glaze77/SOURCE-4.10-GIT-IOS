@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(python3 -c 'import sys,json; m=json.load\\(open\\('\\\\''/Users/Mark/Desktop/VS CODE GIT REP/SOURCE 4.18 TT GIT IOS/content/__TRACKED_VAR__/meta.json'\\\\''\\)\\); print\\({k:m[k] for k in ['\\\\''category'\\\\'','\\\\''clueId'\\\\'','\\\\''slide'\\\\''] if k in m}\\)')",
-      "Bash(python3 -c ' *)"
+      "Bash(python3 -c ' *)",
+      "Bash(curl -s -X POST http://127.0.0.1:5174/api/delete-image -H \"Content-Type: application/json\" -d '{\"cellId\":\"cell-1-0\",\"surface\":\"answer\",\"filename\":\"nonexistent.png\"}')"
     ]
   }
 }
