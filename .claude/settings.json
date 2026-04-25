@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c 'import sys,json; m=json.load\\(open\\('\\\\''/Users/Mark/Desktop/VS CODE GIT REP/SOURCE 4.18 TT GIT IOS/content/__TRACKED_VAR__/meta.json'\\\\''\\)\\); print\\({k:m[k] for k in ['\\\\''category'\\\\'','\\\\''clueId'\\\\'','\\\\''slide'\\\\''] if k in m}\\)')",
+      "Bash(python3 -c ' *)"
+    ]
+  }
+}

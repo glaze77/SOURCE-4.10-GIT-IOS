@@ -8854,6 +8854,26 @@ window.transferTriviaDeck = {};
   window.transferTriviaIsEditMode = isEditModeActive;
   window.transferTriviaIsEditorTextEditing = isTextEditActive;
 
+  function loadCategoryOverrides() {
+    fetch("./content/categories.json", { cache: "no-store" })
+      .then(function(resp) {
+        if (!resp.ok) return null;
+        return resp.json();
+      })
+      .then(function(data) {
+        if (!data || !Array.isArray(data.categories)) return;
+        var catCells = document.querySelectorAll(".grid-row-cats .cat-cell");
+        data.categories.forEach(function(label, i) {
+          if (typeof label === "string" && catCells[i]) {
+            catCells[i].textContent = label;
+          }
+        });
+      })
+      .catch(function() {});
+  }
+
+  loadCategoryOverrides();
+
   var TT_LAYOUT_KEY = "ttQALayoutV1";
   var TT_LAYOUT_STORE_KEY = "ttQALayoutStoreV1";
   var TT_EMBEDDED_LAYOUTS = {
