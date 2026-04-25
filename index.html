@@ -971,6 +971,58 @@ kbd.tt-hotkey {
   position: absolute; top: 18px; right: 18px; width: 44px; height: 44px;
   border: 0; border-radius: 999px; background: rgba(255,255,255,0.12); color: #fff; font-size: 24px; cursor: pointer;
 }
+.tt-edit-mode .tt-editable-entity {
+  cursor: crosshair;
+  outline: 2px solid transparent;
+  outline-offset: 4px;
+}
+.tt-edit-mode .tt-editable-entity:hover {
+  outline-color: rgba(125, 210, 255, 0.72);
+}
+.tt-edit-mode .tt-editable-entity.tt-editor-selected {
+  outline-color: rgba(255, 226, 112, 0.95);
+  box-shadow: 0 0 0 4px rgba(255, 226, 112, 0.16);
+}
+.tt-editor-mode-badge {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 12px);
+  left: 12px;
+  z-index: 20000;
+  display: none;
+  padding: 7px 10px;
+  border-radius: 6px;
+  background: rgba(255, 226, 112, 0.96);
+  color: #182033;
+  font: 800 12px/1 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  letter-spacing: 0;
+  box-shadow: 0 8px 22px rgba(0,0,0,0.26);
+  pointer-events: none;
+}
+.tt-edit-mode .tt-editor-mode-badge {
+  display: block;
+}
+.tt-inline-editing {
+  outline-color: rgba(255, 226, 112, 0.95) !important;
+}
+.tt-inline-editor-textarea {
+  width: 100%;
+  min-height: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  border: 2px solid rgba(255, 226, 112, 0.92);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: rgba(8, 13, 36, 0.92);
+  color: #fff;
+  font: inherit;
+  line-height: 1.18;
+  text-align: inherit;
+  outline: none;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.12);
+}
+.tt-answer-parts .tt-inline-editor-textarea {
+  min-height: 150px;
+}
 
 /* Clue splash overlay */
 #tt-clue-splash-overlay {
@@ -3680,6 +3732,9 @@ if (CLEAN_MODE) {
                 if(typeof window.isPlayerNameEditorOpen === "function" && window.isPlayerNameEditorOpen()){
                     return;
                 }
+                if(typeof window.transferTriviaIsEditMode === "function" && window.transferTriviaIsEditMode()){
+                    return;
+                }
                 var BACKTICK = 192;
                 var SPACE = 32
                 var ENTER = 13;
@@ -3815,6 +3870,9 @@ if (CLEAN_MODE) {
             })
 
             on("keyup", "#answer-button", function(e){
+                if(typeof window.transferTriviaIsEditMode === "function" && window.transferTriviaIsEditMode()){
+                    return;
+                }
                 if(e.keyCode == 13){
                     e.preventDefault();
                     e.stopImmediatePropagation();
@@ -3834,6 +3892,9 @@ if (CLEAN_MODE) {
             })
 
             on("keyup", "#continue-button", function(e){
+                if(typeof window.transferTriviaIsEditMode === "function" && window.transferTriviaIsEditMode()){
+                    return;
+                }
                 if(e.keyCode == 13){
                     e.preventDefault();
                     e.stopImmediatePropagation();
@@ -3863,6 +3924,9 @@ if (CLEAN_MODE) {
             });
 
             on("keydown", ".minus, .plus", function(e){
+                if(typeof window.transferTriviaIsEditMode === "function" && window.transferTriviaIsEditMode()){
+                    return;
+                }
                 if(e.keyCode == 13){
                     handlePoints.call(this, e);
                 }
@@ -8143,6 +8207,432 @@ window.transferTriviaDeck = {};
     '</div>';
   }
 
+  function createEditorState() {
+    return {
+      isEditMode: false,
+      selectedEntity: null,
+      activeTextEdit: null,
+      dirty: false
+    };
+  }
+
+  var editorState = window.transferTriviaEditorState || createEditorState();
+  window.transferTriviaEditorState = editorState;
+
+  function editorEntityKey(entity) {
+    if (!entity || !entity.cellId || !entity.surface || !entity.entityId) return "";
+    return entity.cellId + "::" + entity.surface + "::" + entity.entityId;
+  }
+
+  function updateEditorModeClass() {
+    if (!document.body) return;
+    document.body.classList.toggle("tt-edit-mode", !!editorState.isEditMode);
+  }
+
+  function ensureEditorModeBadge() {
+    if (!document.body) return null;
+    var badge = document.getElementById("tt-editor-mode-badge");
+    if (badge) return badge;
+    badge = document.createElement("div");
+    badge.id = "tt-editor-mode-badge";
+    badge.className = "tt-editor-mode-badge";
+    badge.textContent = "EDIT MODE";
+    document.body.appendChild(badge);
+    return badge;
+  }
+
+  function clearEditorDomSelection() {
+    document.querySelectorAll(".tt-editor-selected").forEach(function(node) {
+      node.classList.remove("tt-editor-selected");
+    });
+  }
+
+  function syncEditorSelectionHighlight() {
+    clearEditorDomSelection();
+    if (!editorState.isEditMode || !editorState.selectedEntity) return;
+    var key = editorEntityKey(editorState.selectedEntity);
+    if (!key) return;
+    document.querySelectorAll('[data-tt-editor-key="' + key + '"]').forEach(function(node) {
+      node.classList.add("tt-editor-selected");
+    });
+  }
+
+  function setEditMode(enabled) {
+    var nextEnabled = !!enabled;
+    if (!nextEnabled && editorState.activeTextEdit) {
+      commitTextEdit();
+    }
+    editorState.isEditMode = nextEnabled;
+    ensureEditorModeBadge();
+    updateEditorModeClass();
+    applyEditorEntityMarkers();
+    if (!editorState.isEditMode) {
+      clearEditorSelection();
+    } else {
+      syncEditorSelectionHighlight();
+    }
+    console.log("Transfer Trivia edit mode:", editorState.isEditMode ? "on" : "off");
+    return editorState.isEditMode;
+  }
+
+  function toggleEditMode() {
+    return setEditMode(!editorState.isEditMode);
+  }
+
+  function clearEditorSelection() {
+    editorState.selectedEntity = null;
+    clearEditorDomSelection();
+  }
+
+  function markDirty(writeDescriptor) {
+    editorState.dirty = true;
+    editorState.lastDirtyWrite = writeDescriptor || null;
+  }
+
+  function selectEditableEntity(entity) {
+    if (!editorState.isEditMode || !entity) return null;
+    var normalized = {
+      cellId: String(entity.cellId || ""),
+      surface: String(entity.surface || ""),
+      entityId: String(entity.entityId || "")
+    };
+    if (!normalized.cellId || (normalized.surface !== "question" && normalized.surface !== "answer") || !normalized.entityId) {
+      return null;
+    }
+    if (typeof entity.mediaIndex === "number") {
+      normalized.mediaIndex = entity.mediaIndex;
+    }
+    normalized.key = editorEntityKey(normalized);
+    editorState.selectedEntity = normalized;
+    syncEditorSelectionHighlight();
+    console.log("Selected: " + normalized.key);
+    return normalized;
+  }
+
+  function clearEditorEntityMarkers(root) {
+    var scope = root || document;
+    scope.querySelectorAll(".tt-editable-entity").forEach(function(node) {
+      node.classList.remove("tt-editable-entity", "tt-editor-selected");
+      node.removeAttribute("data-tt-editor-cell-id");
+      node.removeAttribute("data-tt-editor-surface");
+      node.removeAttribute("data-tt-editor-entity-id");
+      node.removeAttribute("data-tt-editor-key");
+      node.removeAttribute("data-tt-editor-media-index");
+    });
+  }
+
+  function markEditorEntity(node, entity) {
+    if (!node || !entity) return;
+    var key = editorEntityKey(entity);
+    if (!key) return;
+    node.classList.add("tt-editable-entity");
+    node.setAttribute("data-tt-editor-cell-id", entity.cellId);
+    node.setAttribute("data-tt-editor-surface", entity.surface);
+    node.setAttribute("data-tt-editor-entity-id", entity.entityId);
+    node.setAttribute("data-tt-editor-key", key);
+    if (typeof entity.mediaIndex === "number") {
+      node.setAttribute("data-tt-editor-media-index", String(entity.mediaIndex));
+    }
+  }
+
+  function getStepperMediaIndex(img) {
+    var stepper = img && img.closest ? img.closest(".tt-media-stepper") : null;
+    if (!stepper) return null;
+    var index = parseInt(stepper.getAttribute("data-media-index") || "0", 10);
+    return isNaN(index) ? 0 : index;
+  }
+
+  function getEditableText(entity) {
+    if (!entity || !entity.cellId || !entity.surface) return "";
+    var deck = window.transferTriviaDeck || {};
+    var entry = deck[entity.cellId] || {};
+    if (entity.surface === "question") {
+      return String(entry.question == null ? "" : entry.question).replace(/\r/g, "");
+    }
+    if (entity.surface === "answer") {
+      return String(entry.answer == null ? "" : entry.answer).replace(/\r/g, "");
+    }
+    return "";
+  }
+
+  function applyTextDraft(entity, value) {
+    if (!entity || !entity.cellId || !entity.surface) return false;
+    var deck = window.transferTriviaDeck || {};
+    if (!deck[entity.cellId]) {
+      deck[entity.cellId] = { question: "", answer: "", meta: {} };
+    }
+    if (entity.surface === "question") {
+      deck[entity.cellId].question = String(value == null ? "" : value);
+    } else if (entity.surface === "answer") {
+      deck[entity.cellId].answer = String(value == null ? "" : value);
+    } else {
+      return false;
+    }
+    markDirty({
+      type: "text",
+      cellId: entity.cellId,
+      surface: entity.surface
+    });
+    return true;
+  }
+
+  function rerenderActiveCluePreservingModalState() {
+    if (typeof window.transferTriviaRenderActiveModal === "function") {
+      window.transferTriviaRenderActiveModal();
+      return true;
+    }
+    return false;
+  }
+
+  function finishTextEdit(options) {
+    var edit = editorState.activeTextEdit;
+    if (!edit) return false;
+    var shouldCommit = !options || options.commit !== false;
+    var value = edit.textarea ? edit.textarea.value : edit.originalText;
+    var entity = edit.entity;
+    var target = edit.target;
+
+    editorState.activeTextEdit = null;
+    if (target) {
+      target.classList.remove("tt-inline-editing");
+    }
+
+    if (shouldCommit) {
+      applyTextDraft(entity, value);
+      rerenderActiveCluePreservingModalState();
+      if (editorState.isEditMode) {
+        selectEditableEntity(entity);
+      }
+    } else {
+      rerenderActiveCluePreservingModalState();
+      if (editorState.isEditMode) {
+        selectEditableEntity(entity);
+      }
+    }
+    return true;
+  }
+
+  function commitTextEdit() {
+    return finishTextEdit({ commit: true });
+  }
+
+  function cancelTextEdit() {
+    return finishTextEdit({ commit: false });
+  }
+
+  function beginInlineTextEdit(targetEl, entity) {
+    if (!editorState.isEditMode || !targetEl || !entity || entity.entityId !== "text") return false;
+    if (editorState.activeTextEdit) {
+      commitTextEdit();
+    }
+
+    var text = getEditableText(entity);
+    targetEl.classList.add("tt-inline-editing");
+    targetEl.innerHTML = "";
+
+    var textarea = document.createElement("textarea");
+    textarea.className = "tt-inline-editor-textarea";
+    textarea.value = text;
+    textarea.setAttribute("role", "textbox");
+    textarea.setAttribute("aria-label", entity.surface === "question" ? "Edit question text" : "Edit answer text");
+    textarea.addEventListener("click", function(e) {
+      e.stopPropagation();
+    });
+    textarea.addEventListener("keydown", function(e) {
+      e.stopPropagation();
+      if (typeof e.stopImmediatePropagation === "function") {
+        e.stopImmediatePropagation();
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        cancelTextEdit();
+        return;
+      }
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        commitTextEdit();
+      }
+    });
+    textarea.addEventListener("blur", function() {
+      if (editorState.activeTextEdit && editorState.activeTextEdit.textarea === textarea) {
+        commitTextEdit();
+      }
+    });
+
+    editorState.activeTextEdit = {
+      entity: entity,
+      target: targetEl,
+      textarea: textarea,
+      originalText: text
+    };
+
+    targetEl.appendChild(textarea);
+    requestAnimationFrame(function() {
+      textarea.focus();
+      textarea.select();
+    });
+    return true;
+  }
+
+  function applyEditorEntityMarkers(root) {
+    var modalRoot = root || document.querySelector("#question-modal .modal-inner");
+    if (!modalRoot) return;
+    clearEditorEntityMarkers(modalRoot);
+    if (!editorState.isEditMode) return;
+
+    var cellId = window.ttCurrentClueId || "";
+    if (!cellId) return;
+
+    var questionCopy = modalRoot.querySelector(".tt-question-copy");
+    markEditorEntity(questionCopy, {
+      cellId: cellId,
+      surface: "question",
+      entityId: "text"
+    });
+
+    var answerParts = modalRoot.querySelector(".tt-answer-parts");
+    markEditorEntity(answerParts, {
+      cellId: cellId,
+      surface: "answer",
+      entityId: "text"
+    });
+
+    modalRoot.querySelectorAll(".tt-question-media-card img").forEach(function(img, index) {
+      var mediaIndex = getStepperMediaIndex(img);
+      if (mediaIndex == null) mediaIndex = index;
+      markEditorEntity(img, {
+        cellId: cellId,
+        surface: "question",
+        entityId: "media[" + mediaIndex + "]",
+        mediaIndex: mediaIndex
+      });
+    });
+
+    modalRoot.querySelectorAll(".tt-media-card img").forEach(function(img, index) {
+      var mediaIndex = getStepperMediaIndex(img);
+      if (mediaIndex == null) mediaIndex = index;
+      markEditorEntity(img, {
+        cellId: cellId,
+        surface: "answer",
+        entityId: "media[" + mediaIndex + "]",
+        mediaIndex: mediaIndex
+      });
+    });
+
+    syncEditorSelectionHighlight();
+  }
+
+  function entityFromEditorNode(node) {
+    if (!node) return null;
+    var mediaIndex = node.getAttribute("data-tt-editor-media-index");
+    if (node.tagName === "IMG") {
+      var currentStepperIndex = getStepperMediaIndex(node);
+      if (currentStepperIndex !== null) {
+        mediaIndex = String(currentStepperIndex);
+      }
+    }
+    var entity = {
+      cellId: node.getAttribute("data-tt-editor-cell-id") || "",
+      surface: node.getAttribute("data-tt-editor-surface") || "",
+      entityId: node.getAttribute("data-tt-editor-entity-id") || ""
+    };
+    if (mediaIndex !== null) {
+      var parsed = parseInt(mediaIndex, 10);
+      if (!isNaN(parsed)) {
+        entity.mediaIndex = parsed;
+        if (entity.entityId.indexOf("media[") === 0) {
+          entity.entityId = "media[" + parsed + "]";
+        }
+      }
+    }
+    return entity;
+  }
+
+  function handleEditorSelectionClick(e) {
+    if (!editorState.isEditMode) return;
+    if (editorState.activeTextEdit && e.target && e.target.closest && e.target.closest(".tt-inline-editor-textarea")) {
+      return;
+    }
+    var target = e.target && e.target.closest ? e.target.closest(".tt-editable-entity") : null;
+    if (!target) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (typeof e.stopImmediatePropagation === "function") {
+      e.stopImmediatePropagation();
+    }
+    var entity = entityFromEditorNode(target);
+    selectEditableEntity(entity);
+    if (entity && entity.entityId === "text") {
+      beginInlineTextEdit(target, entity);
+    }
+  }
+
+  function isTextEditActive() {
+    return !!editorState.activeTextEdit;
+  }
+
+  function isEditModeActive() {
+    return !!editorState.isEditMode;
+  }
+
+  function isEditModeShortcutEvent(e) {
+    if (!e || e.altKey || !e.shiftKey || !(e.ctrlKey || e.metaKey)) return false;
+    var key = String(e.key || "").toLowerCase();
+    return key === "e" || e.code === "KeyE" || e.keyCode === 69 || e.which === 69;
+  }
+
+  function installEditorEventHandlers() {
+    if (window.__transferTriviaEditorEventsInstalled) return;
+    window.__transferTriviaEditorEventsInstalled = true;
+    ensureEditorModeBadge();
+    var lastShortcutAt = 0;
+
+    function handleEditorShortcut(e) {
+      if (!isEditModeShortcutEvent(e)) return;
+      if (typeof window.isPlayerNameEditorOpen === "function" && window.isPlayerNameEditorOpen()) return;
+      var active = document.activeElement;
+      if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.isContentEditable)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof e.stopImmediatePropagation === "function") {
+        e.stopImmediatePropagation();
+      }
+      var now = Date.now();
+      if (now - lastShortcutAt < 220) return;
+      lastShortcutAt = now;
+      toggleEditMode();
+    }
+
+    document.addEventListener("click", handleEditorSelectionClick, true);
+    document.addEventListener("keydown", handleEditorShortcut, true);
+    document.addEventListener("keyup", handleEditorShortcut, true);
+    window.addEventListener("keydown", handleEditorShortcut, true);
+    window.addEventListener("keyup", handleEditorShortcut, true);
+  }
+
+  installEditorEventHandlers();
+  updateEditorModeClass();
+
+  window.transferTriviaEditor = {
+    state: editorState,
+    createEditorState: createEditorState,
+    setEditMode: setEditMode,
+    toggleEditMode: toggleEditMode,
+    selectEditableEntity: selectEditableEntity,
+    clearEditorSelection: clearEditorSelection,
+    markDirty: markDirty,
+    getEditableText: getEditableText,
+    beginInlineTextEdit: beginInlineTextEdit,
+    applyTextDraft: applyTextDraft,
+    commitTextEdit: commitTextEdit,
+    rerenderActiveCluePreservingModalState: rerenderActiveCluePreservingModalState,
+    applyEditorEntityMarkers: applyEditorEntityMarkers,
+    isEditModeActive: isEditModeActive,
+    isTextEditActive: isTextEditActive
+  };
+  window.transferTriviaIsEditMode = isEditModeActive;
+  window.transferTriviaIsEditorTextEditing = isTextEditActive;
+
   var TT_LAYOUT_KEY = "ttQALayoutV1";
   var TT_LAYOUT_STORE_KEY = "ttQALayoutStoreV1";
   var TT_EMBEDDED_LAYOUTS = {
@@ -9156,12 +9646,28 @@ window.transferTriviaDeck = {};
       inner.innerHTML = entryHtml(entryToRender);
       initMediaSteppers(inner);
       bindModalMediaUi();
+      applyEditorEntityMarkers(inner);
       var questionInnerEl = inner.querySelector(".tt-question-text-inner");
       if (questionInnerEl) {
         questionInnerEl.removeAttribute("data-tt-fitted");
         questionInnerEl.style.visibility = "hidden";
       }
     }
+    window.transferTriviaRenderActiveModal = function() {
+      if (ttCurrentClueId !== cellId) return;
+      var latestEntry = deck[cellId];
+      if (!latestEntry) return;
+      var isAnswerVisible = div_modal.classList.contains("answer-visible");
+      var isAnswerCollapsed = div_modal.classList.contains("answer-collapsed");
+      renderModalEntry(latestEntry);
+      div_modal.classList.toggle("answer-visible", isAnswerVisible);
+      div_modal.classList.toggle("answer-collapsed", isAnswerCollapsed);
+      requestAnimationFrame(function() {
+        syncQuestionModalViewportHeight();
+        fitQuestionTextInModal();
+        fitAnswerTextInModal();
+      });
+    };
     renderModalEntry(entry);
 
     ttDiscoverMediaForCell(cellId, entry).then(function(nextEntry) {
@@ -9225,6 +9731,7 @@ window.transferTriviaDeck = {};
 
   modal.hide = function() {
     document.querySelectorAll(".grid")[0].setAttribute("aria-hidden", "false");
+    clearEditorSelection();
     closeLightbox();
     backToGame();
     renderState({page: "game"});
@@ -9238,6 +9745,7 @@ window.transferTriviaDeck = {};
     }
     ttCurrentClueId = null;
     window.ttCurrentClueId = null;
+    window.transferTriviaRenderActiveModal = null;
     if (current_cell) {
       try { current_cell.focus(); } catch (e) {}
     }
@@ -9255,6 +9763,8 @@ window.transferTriviaDeck = {};
   window.addEventListener("keydown", function(e){
     if (e.key !== "c" && e.key !== "C") return;
     if (typeof window.isPlayerNameEditorOpen === "function" && window.isPlayerNameEditorOpen()) return;
+    if (typeof window.transferTriviaIsEditMode === "function" && window.transferTriviaIsEditMode()) return;
+    if (typeof window.transferTriviaIsEditorTextEditing === "function" && window.transferTriviaIsEditorTextEditing()) return;
     e.preventDefault();
     if (typeof window.playCorrectSound === "function") {
       window.playCorrectSound();
@@ -9263,6 +9773,8 @@ window.transferTriviaDeck = {};
 
   document.addEventListener("keydown", function(e) {
     if (typeof window.isPlayerNameEditorOpen === "function" && window.isPlayerNameEditorOpen()) return;
+    if (typeof window.transferTriviaIsEditMode === "function" && window.transferTriviaIsEditMode()) return;
+    if (typeof window.transferTriviaIsEditorTextEditing === "function" && window.transferTriviaIsEditorTextEditing()) return;
     if (!modal.is_open) return;
     if ((e.key === "a" || e.key === "A")) {
       e.preventDefault();
@@ -10263,6 +10775,7 @@ window.transferTriviaDeck = {};
       node.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); fireWrong(); }, true);
       node.addEventListener('pointerup', function(e){ e.preventDefault(); e.stopPropagation(); fireWrong(); }, true);
       node.addEventListener('keydown', function(e){
+        if(typeof window.transferTriviaIsEditMode === 'function' && window.transferTriviaIsEditMode()){ return; }
         if(e.key === 'Enter' || e.key === ' ' || e.keyCode === 13 || e.keyCode === 32){
           e.preventDefault(); e.stopPropagation(); fireWrong();
         }
