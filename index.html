@@ -8213,6 +8213,7 @@ window.transferTriviaDeck = {};
       selectedEntity: null,
       activeTextEdit: null,
       dirty: false,
+      dirtyWrites: {},
       undoHistory: {}
     };
   }
@@ -8288,6 +8289,9 @@ window.transferTriviaDeck = {};
   function markDirty(writeDescriptor) {
     editorState.dirty = true;
     editorState.lastDirtyWrite = writeDescriptor || null;
+    if (writeDescriptor && writeDescriptor.type === "text" && writeDescriptor.cellId && writeDescriptor.surface) {
+      editorState.dirtyWrites[writeDescriptor.cellId + "::" + writeDescriptor.surface] = true;
+    }
   }
 
   function selectEditableEntity(entity) {
@@ -8431,6 +8435,68 @@ window.transferTriviaDeck = {};
 
   function cancelTextEdit() {
     return finishTextEdit({ commit: false });
+  }
+
+  function buildTextWritePath(cellId, surface) {
+    return "content/" + cellId + "/" + surface + ".txt";
+  }
+
+  var _saveStatusTimer = null;
+  function showSaveStatus(message, durationMs) {
+    var badge = document.getElementById("tt-editor-mode-badge");
+    if (!badge) return;
+    if (_saveStatusTimer) {
+      clearTimeout(_saveStatusTimer);
+      _saveStatusTimer = null;
+    }
+    badge.textContent = message;
+    _saveStatusTimer = setTimeout(function() {
+      _saveStatusTimer = null;
+      badge.textContent = "EDIT MODE";
+    }, durationMs == null ? 2500 : durationMs);
+  }
+
+  function saveEditorTextChanges() {
+    var keys = Object.keys(editorState.dirtyWrites);
+    if (!keys.length) return;
+    if (editorState.activeTextEdit) {
+      commitTextEdit();
+      keys = Object.keys(editorState.dirtyWrites);
+      if (!keys.length) return;
+    }
+    var saves = keys.map(function(scopeKey) {
+      var parts = scopeKey.split("::");
+      var cellId = parts[0];
+      var surface = parts[1];
+      var text = getEditableText({ cellId: cellId, surface: surface });
+      var filePath = buildTextWritePath(cellId, surface);
+      return fetch("http://127.0.0.1:5174/api/write-text", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: filePath, text: text })
+      })
+        .then(function(resp) { return resp.json(); })
+        .then(function(data) {
+          if (data && data.ok) {
+            delete editorState.dirtyWrites[scopeKey];
+          }
+          return data && data.ok ? { ok: true, scope: scopeKey } : { ok: false, scope: scopeKey, error: (data && data.error) || "unknown" };
+        })
+        .catch(function() {
+          return { ok: false, scope: scopeKey, error: "helper_not_running" };
+        });
+    });
+    Promise.all(saves).then(function(results) {
+      var anyFail = results.some(function(r) { return !r.ok; });
+      if (Object.keys(editorState.dirtyWrites).length === 0) {
+        editorState.dirty = false;
+      }
+      if (anyFail) {
+        showSaveStatus("Save failed – helper not running");
+      } else {
+        showSaveStatus("Saved");
+      }
+    });
   }
 
   function undoTextEdit() {
@@ -8644,12 +8710,20 @@ window.transferTriviaDeck = {};
       e.stopPropagation();
     }
 
+    function handleEditorSave(e) {
+      if (!editorState.isEditMode) return;
+      if (!(e.ctrlKey || e.metaKey) || e.key !== "s") return;
+      e.preventDefault();
+      saveEditorTextChanges();
+    }
+
     document.addEventListener("click", handleEditorSelectionClick, true);
     document.addEventListener("keydown", handleEditorShortcut, true);
     document.addEventListener("keyup", handleEditorShortcut, true);
     window.addEventListener("keydown", handleEditorShortcut, true);
     window.addEventListener("keyup", handleEditorShortcut, true);
     document.addEventListener("keydown", handleEditorUndo, true);
+    document.addEventListener("keydown", handleEditorSave, true);
   }
 
   installEditorEventHandlers();
@@ -8671,7 +8745,8 @@ window.transferTriviaDeck = {};
     applyEditorEntityMarkers: applyEditorEntityMarkers,
     isEditModeActive: isEditModeActive,
     isTextEditActive: isTextEditActive,
-    undoTextEdit: undoTextEdit
+    undoTextEdit: undoTextEdit,
+    saveEditorTextChanges: saveEditorTextChanges
   };
   window.transferTriviaIsEditMode = isEditModeActive;
   window.transferTriviaIsEditorTextEditing = isTextEditActive;
