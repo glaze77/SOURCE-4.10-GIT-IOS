@@ -8212,7 +8212,8 @@ window.transferTriviaDeck = {};
       isEditMode: false,
       selectedEntity: null,
       activeTextEdit: null,
-      dirty: false
+      dirty: false,
+      undoHistory: {}
     };
   }
 
@@ -8398,6 +8399,18 @@ window.transferTriviaDeck = {};
     }
 
     if (shouldCommit) {
+      var currentText = getEditableText(entity);
+      if (currentText !== value) {
+        var scopeKey = entity.cellId + "::" + entity.surface;
+        if (!editorState.undoHistory[scopeKey]) {
+          editorState.undoHistory[scopeKey] = [];
+        }
+        var stack = editorState.undoHistory[scopeKey];
+        stack.push(currentText);
+        if (stack.length > 20) {
+          stack.shift();
+        }
+      }
       applyTextDraft(entity, value);
       rerenderActiveCluePreservingModalState();
       if (editorState.isEditMode) {
@@ -8418,6 +8431,24 @@ window.transferTriviaDeck = {};
 
   function cancelTextEdit() {
     return finishTextEdit({ commit: false });
+  }
+
+  function undoTextEdit() {
+    if (!editorState.isEditMode) return false;
+    if (editorState.activeTextEdit) return false;
+    var sel = editorState.selectedEntity;
+    if (!sel || !sel.cellId || !sel.surface) return false;
+    var scopeKey = sel.cellId + "::" + sel.surface;
+    var stack = editorState.undoHistory[scopeKey];
+    if (!stack || !stack.length) return false;
+    var prevText = stack.pop();
+    var entity = { cellId: sel.cellId, surface: sel.surface, entityId: "text" };
+    applyTextDraft(entity, prevText);
+    rerenderActiveCluePreservingModalState();
+    if (editorState.isEditMode) {
+      selectEditableEntity(entity);
+    }
+    return true;
   }
 
   function beginInlineTextEdit(targetEl, entity) {
@@ -8603,11 +8634,22 @@ window.transferTriviaDeck = {};
       toggleEditMode();
     }
 
+    function handleEditorUndo(e) {
+      if (!editorState.isEditMode) return;
+      var active = document.activeElement;
+      if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.isContentEditable)) return;
+      if (!(e.ctrlKey || e.metaKey) || e.key !== "z" || e.shiftKey) return;
+      if (!undoTextEdit()) return;
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
     document.addEventListener("click", handleEditorSelectionClick, true);
     document.addEventListener("keydown", handleEditorShortcut, true);
     document.addEventListener("keyup", handleEditorShortcut, true);
     window.addEventListener("keydown", handleEditorShortcut, true);
     window.addEventListener("keyup", handleEditorShortcut, true);
+    document.addEventListener("keydown", handleEditorUndo, true);
   }
 
   installEditorEventHandlers();
@@ -8628,7 +8670,8 @@ window.transferTriviaDeck = {};
     rerenderActiveCluePreservingModalState: rerenderActiveCluePreservingModalState,
     applyEditorEntityMarkers: applyEditorEntityMarkers,
     isEditModeActive: isEditModeActive,
-    isTextEditActive: isTextEditActive
+    isTextEditActive: isTextEditActive,
+    undoTextEdit: undoTextEdit
   };
   window.transferTriviaIsEditMode = isEditModeActive;
   window.transferTriviaIsEditorTextEditing = isTextEditActive;
