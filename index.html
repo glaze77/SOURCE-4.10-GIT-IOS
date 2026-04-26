@@ -10064,9 +10064,9 @@ window.transferTriviaDeck = {};
       var panelGap = Math.max(6, Math.round(h * 0.03));
       questionHeight = Math.max(60, h - answerHeight - panelGap);
     } else {
-      // Original overlapping layout — answer sheet floats over question on large screens
+      // Both panels fill the full available height; answer overlays question when revealed
       answerHeight = answerVisible
-        ? (answerCollapsed ? Math.max(30, Math.round(h * 0.05)) : Math.max(220, Math.round(h * 0.66)))
+        ? (answerCollapsed ? Math.max(30, Math.round(h * 0.05)) : h - topGap - bottomGap)
         : Math.max(150, Math.round(h * 0.24));
       questionHeight = Math.max(220, h);
     }
@@ -10080,15 +10080,21 @@ window.transferTriviaDeck = {};
 
     answerPanel.style.left = answerInsetX + "px";
     answerPanel.style.right = answerInsetX + "px";
-    answerPanel.style.top = "auto";
-    answerPanel.style.bottom = bottomGap + "px";
     answerPanel.style.width = "auto";
-    answerPanel.style.height = answerHeight + "px";
+    if (!isLandMob && answerVisible && !answerCollapsed) {
+      answerPanel.style.top = topGap + "px";
+      answerPanel.style.bottom = bottomGap + "px";
+      answerPanel.style.height = "auto";
+    } else {
+      answerPanel.style.top = "auto";
+      answerPanel.style.bottom = bottomGap + "px";
+      answerPanel.style.height = answerHeight + "px";
+    }
 
-    // Vertically center question text in the visible area (above the answer panel)
+    // Question text fills full panel height — no padding-bottom needed
     var questionText = questionPanel.querySelector(".tt-question-text");
     if (questionText && !isLandMob) {
-      questionText.style.paddingBottom = (answerHeight + bottomGap) + "px";
+      questionText.style.paddingBottom = "";
     }
   }
 
