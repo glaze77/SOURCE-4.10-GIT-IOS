@@ -538,14 +538,15 @@
       }));
     });
 
-    // Categories: read-patch-write manifest.json
+    // Categories: write-json to categories.json (the source loadCategoryOverrides reads)
     if (hasCategoryDirty) {
       var catCells = document.querySelectorAll('.grid-row-cats .cat-cell');
       var categories = Array.prototype.map.call(catCells, function (el) {
         return el.textContent.trim();
       });
-      requests.push(patchJsonFile('content/manifest.json', function (obj) {
-        obj.categories = categories;
+      requests.push(postJson('/api/write-json', {
+        path: 'content/categories.json',
+        json: { categories: categories }
       }));
     }
 
