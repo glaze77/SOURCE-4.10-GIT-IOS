@@ -12149,6 +12149,12 @@ window.transferTriviaDeck = {};
       loadState.manifestError = null;
       loadState.manifestCellIds = Array.isArray(manifest && manifest.cells) ? manifest.cells.slice() : [];
       var cellIds = Array.isArray(manifest && manifest.cells) ? manifest.cells.slice() : [];
+      if(Array.isArray(manifest && manifest.categories)){
+        var catEls = document.querySelectorAll('.grid-row-cats .cat-cell');
+        manifest.categories.forEach(function(name, i){
+          if(catEls[i]) catEls[i].textContent = name;
+        });
+      }
       if(!cellIds.length){
         console.warn('Transfer Trivia loader found no cells in manifest.');
         emitDeckLoadComplete();

@@ -408,11 +408,17 @@
       fetch(API + '/api/import-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ entity: entity, filename: file.name, dataUrl: ev.target.result })
+        body: JSON.stringify({
+          cellId: entity.cellId,
+          surface: entity.mediaSurface,
+          filename: file.name,
+          data: ev.target.result
+        })
       }).then(function (r) { return r.json(); }).then(function (res) {
-        if (res.src) applyMediaReplacement(entity, res.src);
+        if (res.ok && res.path) applyMediaReplacement(entity, res.path);
+        else showBadgeMsg('Import failed: ' + (res.error || '?'), 3000);
       }).catch(function () {
-        alert('Image import failed — is the edit server running?\nnode server.js');
+        showBadgeMsg('Import failed — helper running?', 3000);
       });
     };
     reader.readAsDataURL(file);
@@ -434,81 +440,137 @@
   }
 
   function deleteImageAtEntity(entity) {
-    document.querySelectorAll('[data-entity-id="' + entity.entityId + '"]').forEach(function (img) {
-      var card = img.closest('.tt-media-card, .tt-question-media-card');
-      if (card) card.remove(); else img.remove();
-    });
     var entry = window.transferTriviaDeck && window.transferTriviaDeck[entity.cellId];
-    if (entry && entry.meta) {
-      var key = entity.mediaSurface === 'question' ? 'questionMedia' : 'answerMedia';
-      var arr = Array.isArray(entry.meta[key]) ? entry.meta[key] : [];
-      arr.splice(entity.mediaIndex, 1);
-      if (!arr.length) {
+
+    var mediaKey = entity.mediaSurface === 'question' ? 'questionMedia' : 'answerMedia';
+    var mediaArr = entry && entry.meta && Array.isArray(entry.meta[mediaKey]) ? entry.meta[mediaKey]
+      : (entry && entry.meta && entry.meta.media && Array.isArray(entry.meta.media[entity.mediaSurface])
+          ? entry.meta.media[entity.mediaSurface] : []);
+    var item = mediaArr[entity.mediaIndex];
+    var filename = item && item.src ? item.src.split('/').pop() : null;
+
+    function applyDeletion() {
+      document.querySelectorAll('[data-entity-id="' + entity.entityId + '"]').forEach(function (img) {
+        var card = img.closest('.tt-media-card, .tt-question-media-card');
+        if (card) card.remove(); else img.remove();
+      });
+      mediaArr.splice(entity.mediaIndex, 1);
+      if (!mediaArr.length) {
         ['#question-modal .tt-answer-content', '#question-modal .tt-question-text'].forEach(function (sel) {
           var el = document.querySelector(sel);
           if (el) el.classList.remove('has-media');
         });
       }
+      state.dirty = true;
     }
-    var k = entity.cellId + '::media::' + entity.mediaSurface + '::' + entity.mediaIndex;
-    state.dirtyWrites[k] = true;
-    state.dirty = true;
+
+    if (filename) {
+      fetch(API + '/api/delete-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cellId: entity.cellId, surface: entity.mediaSurface, filename: filename })
+      }).then(function (r) { return r.json(); }).then(function (res) {
+        if (res.ok) applyDeletion();
+        else showBadgeMsg('Delete failed: ' + (res.error || '?'), 3000);
+      }).catch(function () {
+        showBadgeMsg('Delete failed — helper running?', 3000);
+      });
+    } else {
+      applyDeletion();
+    }
   }
 
   // ── Save ───────────────────────────────────────────────────────
+  function postJson(endpoint, body) {
+    return fetch(API + endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    }).then(function (r) { return r.json(); });
+  }
+
+  function patchJsonFile(path, patchFn) {
+    return postJson('/api/read-json', { path: path }).then(function (res) {
+      var obj = (res.ok && res.json) ? res.json : {};
+      patchFn(obj);
+      return postJson('/api/write-json', { path: path, json: obj });
+    });
+  }
+
   function saveEditorChanges() {
+    if (state.activeTextEdit) commitTextEdit();
     if (!state.dirty) { showBadgeMsg('Nothing to save', 1500); return; }
 
-    var writes = [];
-    var categoriesDirty = false;
+    var requests = [];
+    var hintCells = {};
+    var hasCategoryDirty = false;
 
     Object.keys(state.dirtyWrites).forEach(function (key) {
-      var parts = key.split('::');
+      var parts   = key.split('::');
       var cellId  = parts[0];
       var surface = parts[1];
-      if (cellId === 'category') { categoriesDirty = true; return; }
+      if (cellId === 'category') { hasCategoryDirty = true; return; }
       if (surface === 'media') return;
       var entry = window.transferTriviaDeck && window.transferTriviaDeck[cellId];
       if (!entry) return;
-      var value;
+
       if (surface === 'question') {
-        value = entry.question;
+        requests.push(postJson('/api/write-text', {
+          path: 'content/' + cellId + '/question.txt',
+          text: String(entry.question || '')
+        }));
       } else if (surface === 'answer') {
-        value = entry.answer;
+        requests.push(postJson('/api/write-text', {
+          path: 'content/' + cellId + '/answer.txt',
+          text: String(entry.answer || '')
+        }));
       } else if (surface === 'hint') {
-        var meta = entry.meta || {};
-        var sources = Array.isArray(meta.source) ? meta.source : [];
-        value = sources.join(' / ');
+        hintCells[cellId] = entry;
       }
-      if (value !== undefined) writes.push({ cellId: cellId, surface: surface, value: value });
     });
 
-    // Collect all current category names and write as one batch
-    if (categoriesDirty) {
-      var allCats = Array.prototype.map.call(
-        document.querySelectorAll('.grid-row-cats .cat-cell'),
-        function (el) { return el.textContent.trim(); }
-      );
-      writes.push({ surface: 'categories', value: allCats });
+    // Hint: read-patch-write meta.json to preserve all other fields
+    Object.keys(hintCells).forEach(function (cellId) {
+      var entry = hintCells[cellId];
+      var sources = Array.isArray((entry.meta || {}).source) ? entry.meta.source : [];
+      requests.push(patchJsonFile('content/' + cellId + '/meta.json', function (obj) {
+        obj.source = sources;
+      }));
+    });
+
+    // Categories: read-patch-write manifest.json
+    if (hasCategoryDirty) {
+      var catCells = document.querySelectorAll('.grid-row-cats .cat-cell');
+      var categories = Array.prototype.map.call(catCells, function (el) {
+        return el.textContent.trim();
+      });
+      requests.push(patchJsonFile('content/manifest.json', function (obj) {
+        obj.categories = categories;
+      }));
     }
 
-    if (!writes.length) {
+    if (!requests.length) {
       state.dirtyWrites = {};
       state.dirty = false;
       showBadgeMsg('Saved', 2000);
       return;
     }
 
-    fetch(API + '/api/write-text', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(writes)
-    }).then(function (r) { return r.json(); }).then(function () {
-      state.dirtyWrites = {};
-      state.dirty = false;
-      showBadgeMsg('Saved ✓', 2000);
-    }).catch(function () {
-      showBadgeMsg('Save failed!', 3000);
+    Promise.all(requests).then(function (results) {
+      var allOk = results.every(function (res) { return res && res.ok; });
+      if (allOk) {
+        state.dirtyWrites = {};
+        state.dirty = false;
+        showBadgeMsg('Saved ✓', 2000);
+      } else {
+        results.forEach(function (res, i) {
+          if (!res || !res.ok) console.error('Save failed for request ' + i, res);
+        });
+        showBadgeMsg('Save failed!', 3000);
+      }
+    }).catch(function (err) {
+      console.error('Save error:', err);
+      showBadgeMsg('Save failed — helper running?', 3000);
     });
   }
 
