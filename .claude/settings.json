@@ -13,7 +13,9 @@
       "Bash(printf 'Schematics flow chart PDF 8 / ASCO 434 Page 2-3 and 2-4 PDF\\(9-10\\)')",
       "Bash(printf 'ASCO 434 Page 5-11 Y PDF\\(36\\)')",
       "Bash(printf 'ASCO 434 Page 2-2 PDF\\(8\\) / Page 5-11 PDF\\(36\\)')",
-      "Bash(printf 'Schematics / ASCO 434 Page 5-11 N and Z PDF\\(36\\)')"
+      "Bash(printf 'Schematics / ASCO 434 Page 5-11 N and Z PDF\\(36\\)')",
+      "Bash(cp \"/Users/Mark/Desktop/VS CODE GIT REP/SOURCE 4.18 TT GIT IOS/deploy editor/editor.js\" \"/Users/Mark/Desktop/VS CODE GIT REP/SOURCE 4.18 TT GIT IOS/editor.js\")",
+      "Bash(cp \"/Users/Mark/Desktop/VS CODE GIT REP/SOURCE 4.18 TT GIT IOS/deploy editor/server.js\" \"/Users/Mark/Desktop/VS CODE GIT REP/SOURCE 4.18 TT GIT IOS/server.js\")"
     ]
   }
 }
